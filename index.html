@@ -216,10 +216,12 @@
                 addProductForm.reset();
                 alert('Produk berhasil ditambahkan!');
 
-            } catch (error) {
+                        } catch (error) {
                 console.error("Error adding product: ", error);
-                alert('Gagal menambahkan produk. Cek console untuk detail error.');
-            } finally {
+                // MODIFIKASI: Tampilkan detail error langsung di alert
+                alert('Gagal menambahkan produk!\n\nDetail Error: ' + error.message);
+            }
+ finally {
                 submitButton.disabled = false;
                 submitButton.textContent = 'Tambah Produk';
             }
