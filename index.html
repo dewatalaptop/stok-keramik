@@ -1,1 +1,248 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manajemen Stok Keramik</title>
+    <style>
+        /* Modern CSS Reset */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Poppins', sans-serif; background-color: #f4f7f6; color: #333; line-height: 1.6; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 20px; }
+        header h1 { text-align: center; color: #2c3e50; margin-bottom: 30px; font-weight: 600; }
+        .form-card { background: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05); margin-bottom: 40px; }
+        .form-card h2 { margin-bottom: 20px; font-weight: 500; color: #34495e; border-left: 4px solid #3498db; padding-left: 10px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; align-items: end; }
+        .input-group { display: flex; flex-direction: column; }
+        .input-group label { margin-bottom: 8px; font-size: 0.9em; color: #555; font-weight: 500; }
+        .input-group input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1em; transition: border-color 0.3s, box-shadow 0.3s; }
+        .input-group input:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2); }
+        input[type="file"] { border: 1px dashed #ccc; padding: 10px; }
+        input[type="file"]::file-selector-button { margin-right: 10px; border: none; background: #3498db; padding: 8px 12px; border-radius: 6px; color: #fff; cursor: pointer; transition: background 0.2s; }
+        input[type="file"]::file-selector-button:hover { background: #2980b9; }
+        button { padding: 12px 20px; border: none; border-radius: 8px; background-color: #3498db; color: white; font-size: 1em; font-weight: 500; cursor: pointer; transition: background-color 0.3s, transform 0.2s; width: 100%; height: 48px; }
+        button:hover { background-color: #2980b9; transform: translateY(-2px); }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        button.danger { background-color: #e74c3c; }
+        button.danger:hover { background-color: #c0392b; }
+        button.success { background-color: #2ecc71; }
+        button.success:hover { background-color: #27ae60; }
+        #productList { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
+        .product-card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05); display: flex; flex-direction: column; transition: transform 0.3s, box-shadow 0.3s; }
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1); }
+        .product-card img { width: 100%; height: 200px; object-fit: cover; }
+        .product-info { padding: 20px; flex-grow: 1; }
+        .product-info h3 { margin-bottom: 10px; color: #2c3e50; }
+        .stock-display { font-size: 1.5em; font-weight: 600; color: #3498db; margin-bottom: 20px; }
+        .stock-display span { font-size: 0.7em; font-weight: 400; color: #7f8c8d; }
+        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: center; }
+        .actions input { width: 100%; }
+        .delete-action { margin-top: 15px; }
+        #loading, #empty-state { text-align: center; margin-top: 50px; font-size: 1.2em; color: #7f8c8d; }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Manajemen Stok Keramik</h1>
+        </header>
+
+        <div class="form-card">
+            <h2>Tambah Produk Baru</h2>
+            <form id="addProductForm" class="form-grid">
+                <div class="input-group">
+                    <label for="productName">Nama Produk</label>
+                    <input type="text" id="productName" placeholder="Contoh: Vas Bunga Estetik" required>
+                </div>
+                <div class="input-group">
+                    <label for="productStock">Stok Awal</label>
+                    <input type="number" id="productStock" placeholder="Contoh: 50" min="0" required>
+                </div>
+                <div class="input-group">
+                    <label for="productImage">Foto Produk</label>
+                    <input type="file" id="productImage" accept="image/*" required>
+                </div>
+                <button type="submit">Tambah Produk</button>
+            </form>
+        </div>
+
+        <div id="loading">Memuat data produk...</div>
+        <div id="empty-state" style="display: none;">Belum ada produk. Silakan tambahkan produk baru di atas.</div>
+        <div id="productList"></div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script>
+        // ===================================================================================
+        // === BAGIAN KONFIGURASI - ISI DENGAN KUNCI YANG SUDAH ANDA SALIN ===
+        // ===================================================================================
+
+        // --- PASTE KONFIGURASI FIREBASE ANDA DI SINI ---
+        // (Ganti seluruh bagian dari "apiKey" sampai "appId")
+        const firebaseConfig = {
+    apiKey: "AIzaSyCkzNNhJrtOwOKLK9mKfjMGk6rAj0D_jqM",
+    authDomain: "stok-keramik-ds.firebaseapp.com",
+    projectId: "stok-keramik-ds",
+    storageBucket: "stok-keramik-ds.firebasestorage.app",
+    messagingSenderId: "1031003194375",
+    appId: "1:1031003194375:web:b16f303511d71524ab16a2"
+  };
+
+        // --- ISI DETAIL CLOUDINARY ANDA DI SINI ---
+        const CLOUDINARY_CLOUD_NAME = "dn6Oib3ur";
+        const CLOUDINARY_UPLOAD_PRESET = "kz5m8b6z";
+        // ===================================================================================
+        // === AKHIR BAGIAN KONFIGURASI ===
+        // ===================================================================================
+
+
+        // Dibawah ini adalah logika aplikasi, tidak perlu diubah.
+        const CLOUDINARY_API_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        const addProductForm = document.getElementById('addProductForm');
+        const productNameInput = document.getElementById('productName');
+        const productStockInput = document.getElementById('productStock');
+        const productImageInput = document.getElementById('productImage');
+        const productListDiv = document.getElementById('productList');
+        const loadingDiv = document.getElementById('loading');
+        const emptyStateDiv = document.getElementById('empty-state');
+
+        const renderProduct = (doc) => {
+            const data = doc.data();
+            const id = doc.id;
+
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            card.setAttribute('data-id', id);
+
+            card.innerHTML = `
+                <img src="${data.imageUrl}" alt="${data.name}">
+                <div class="product-info">
+                    <h3>${data.name}</h3>
+                    <div class="stock-display">${data.stock} <span>unit</span></div>
+                    <div class="actions">
+                        <input type="number" class="stock-update-input" min="1" placeholder="Jumlah">
+                        <button class="update-stock-btn success" data-action="add">Tambah Stok</button>
+                    </div>
+                     <div class="actions" style="margin-top: 10px;">
+                        <input type="number" class="stock-update-input" min="1" placeholder="Jumlah">
+                        <button class="update-stock-btn danger" data-action="sell">Stok Terjual</button>
+                    </div>
+                    <div class="delete-action">
+                        <button class="delete-btn danger">Hapus Produk</button>
+                    </div>
+                </div>
+            `;
+            productListDiv.appendChild(card);
+            
+            card.querySelector('.delete-btn').addEventListener('click', () => deleteProduct(id));
+            
+            card.querySelectorAll('.update-stock-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const action = e.target.dataset.action;
+                    const input = e.target.closest('.actions').querySelector('.stock-update-input');
+                    const value = parseInt(input.value);
+
+                    if (!isNaN(value) && value > 0) {
+                        const change = action === 'add' ? value : -value;
+                        updateStock(id, data.stock, change);
+                        input.value = '';
+                    } else {
+                        alert('Masukkan jumlah yang valid.');
+                    }
+                });
+            });
+        };
+
+        db.collection('products').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+            loadingDiv.style.display = 'none';
+            if (snapshot.empty) {
+                emptyStateDiv.style.display = 'block';
+                productListDiv.innerHTML = '';
+            } else {
+                emptyStateDiv.style.display = 'none';
+                productListDiv.innerHTML = '';
+                snapshot.docs.forEach(doc => { renderProduct(doc); });
+            }
+        }, err => {
+            console.error("Error fetching documents: ", err);
+            loadingDiv.innerText = "Gagal memuat data. Periksa koneksi dan konfigurasi Firebase.";
+        });
+
+        addProductForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const name = productNameInput.value;
+            const stock = parseInt(productStockInput.value);
+            const imageFile = productImageInput.files[0];
+
+            if (!name || isNaN(stock) || !imageFile) {
+                alert('Harap isi semua kolom dengan benar.');
+                return;
+            }
+            
+            const submitButton = addProductForm.querySelector('button');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Mengunggah...';
+
+            try {
+                const formData = new FormData();
+                formData.append('file', imageFile);
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+                const response = await fetch(CLOUDINARY_API_URL, { method: 'POST', body: formData });
+                const cloudinaryData = await response.json();
+                
+                if (!cloudinaryData.secure_url) { throw new Error('Upload ke Cloudinary gagal.'); }
+
+                const imageUrl = cloudinaryData.secure_url;
+
+                await db.collection('products').add({
+                    name: name,
+                    stock: stock,
+                    imageUrl: imageUrl,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                addProductForm.reset();
+                alert('Produk berhasil ditambahkan!');
+
+            } catch (error) {
+                console.error("Error adding product: ", error);
+                alert('Gagal menambahkan produk. Cek console untuk detail error.');
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Tambah Produk';
+            }
+        });
+
+        const updateStock = async (id, currentStock, change) => {
+             const newStock = currentStock + change;
+             if (newStock < 0) { alert('Stok tidak boleh minus!'); return; }
+             try {
+                await db.collection('products').doc(id).update({
+                    stock: firebase.firestore.FieldValue.increment(change)
+                });
+             } catch(error) { console.error("Error updating stock: ", error); alert('Gagal mengupdate stok.'); }
+        };
+
+        const deleteProduct = async (id) => {
+            if (!confirm('Apakah Anda yakin ingin menghapus produk ini?')) { return; }
+            try {
+                await db.collection('products').doc(id).delete();
+                alert('Produk berhasil dihapus dari daftar.');
+            } catch (error) { console.error("Error removing document: ", error); alert('Gagal menghapus produk.'); }
+        };
+    </script>
+</body>
+</html>
 
