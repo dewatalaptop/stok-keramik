@@ -3,19 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flappy Bird Remastered</title>
+    <title>Flappy Bird Online Leaderboard</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
         body {
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            margin: 0; padding: 0;
+            display: flex; justify-content: center; align-items: center;
             height: 100vh;
             background-color: #333;
-            font-family: 'Press Start 2P', cursive; /* Font Pixel Style */
+            font-family: 'Press Start 2P', cursive;
             overflow: hidden;
             touch-action: none; 
         }
@@ -23,86 +20,73 @@
         #game-container {
             position: relative;
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            width: 100%;
-            max-width: 400px; 
-            height: 100%;
-            max-height: 600px;
-            background: #70C5CE; /* Warna langit klasik */
+            width: 100%; max-width: 400px; 
+            height: 100%; max-height: 600px;
+            background: #70C5CE;
             overflow: hidden;
         }
 
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
+        canvas { display: block; width: 100%; height: 100%; }
 
         #ui-layer {
-            position: absolute;
-            top: 10%;
-            width: 100%;
-            text-align: center;
-            pointer-events: none;
-            z-index: 20;
+            position: absolute; top: 10%; width: 100%;
+            text-align: center; pointer-events: none; z-index: 20;
         }
 
         #score {
-            font-size: 3rem;
-            color: white;
+            font-size: 3rem; color: white;
             -webkit-text-stroke: 2px #000;
             text-shadow: 2px 2px 0 #000;
         }
 
+        /* Tampilan Layar (Start, Game Over, Login) */
         .screen {
-            position: absolute;
-            top: 50%;
-            left: 50%;
+            position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            text-align: center;
-            width: 80%;
-            z-index: 30;
+            text-align: center; width: 85%; z-index: 30;
+            display: none; /* Hidden by default */
         }
 
-        #start-screen button, #game-over-screen button {
-            background: #E86101;
-            border: 2px solid #fff;
-            box-shadow: 0 4px 0 #994000;
-            color: white;
-            padding: 15px 20px;
-            font-size: 1rem;
-            font-family: inherit;
-            cursor: pointer;
-            border-radius: 5px;
-            margin-top: 20px;
-            text-transform: uppercase;
+        .btn {
+            background: #E86101; border: 2px solid #fff;
+            box-shadow: 0 4px 0 #994000; color: white;
+            padding: 12px 15px; font-size: 0.8rem;
+            font-family: inherit; cursor: pointer;
+            border-radius: 5px; margin-top: 10px;
+            text-transform: uppercase; width: 100%;
         }
 
-        #start-screen button:active, #game-over-screen button:active {
-            transform: translateY(4px);
-            box-shadow: 0 0 0 #994000;
-        }
+        .btn:active { transform: translateY(4px); box-shadow: 0 0 0 #994000; }
+        .btn-google { background: #4285F4; box-shadow: 0 4px 0 #0d47a1; }
+        .btn-google:active { box-shadow: 0 0 0 #0d47a1; }
 
         h1 { 
-            color: #F4D03F; 
-            -webkit-text-stroke: 1.5px #000;
-            text-shadow: 3px 3px 0 #000;
-            line-height: 1.5;
-            font-size: 1.8rem;
+            color: #F4D03F; -webkit-text-stroke: 1.5px #000;
+            text-shadow: 3px 3px 0 #000; font-size: 1.5rem; margin-bottom: 20px;
         }
         
-        p { color: white; text-shadow: 1px 1px 0 #000; font-size: 0.8rem; line-height: 1.5;}
+        /* Leaderboard Table */
+        .leaderboard-box {
+            background: #DED895; border: 2px solid #543847;
+            padding: 10px; border-radius: 5px; margin-bottom: 10px;
+            color: #543847; font-size: 0.7rem;
+            max-height: 150px; overflow-y: auto;
+        }
+        
+        .rank-row {
+            display: flex; justify-content: space-between;
+            padding: 5px 0; border-bottom: 1px dashed #543847;
+        }
+        .rank-row:last-child { border-bottom: none; }
+        .rank-me { color: #E86101; font-weight: bold; }
 
-        #game-over-screen { display: none; }
-        
-        /* Panel skor putih di game over */
-        .score-board {
-            background: #DED895;
-            border: 2px solid #543847;
-            padding: 20px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            color: #E86101;
+        #user-info {
+            position: absolute; top: 10px; left: 10px;
+            font-size: 0.6rem; color: white; z-index: 25;
+            text-shadow: 1px 1px 0 #000;
+            display: flex; align-items: center; gap: 5px;
         }
+        #user-photo { width: 24px; height: 24px; border-radius: 50%; border: 1px solid white;}
     </style>
 </head>
 <body>
@@ -110,27 +94,205 @@
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
         
+        <div id="user-info" style="display:none;">
+            <img id="user-photo" src="" alt="user">
+            <span id="user-name">Player</span>
+            <button onclick="logout()" style="font-size:0.5rem; padding:2px 5px; margin-left:5px; background:red; border:1px solid white; color:white; font-family:inherit; cursor:pointer;">LOGOUT</button>
+        </div>
+
         <div id="ui-layer">
             <div id="score">0</div>
         </div>
 
-        <div id="start-screen" class="screen">
+        <div id="login-screen" class="screen" style="display: flex; flex-direction: column;">
             <h1>FLAPPY<br>BIRD</h1>
-            <button onclick="startGame()">START</button>
+            <p style="color:white; font-size:0.7rem; margin-bottom:20px; line-height:1.5;">LOGIN UNTUK MENCATAT<br>SKOR DI WORLD LEADERBOARD</p>
+            <button class="btn btn-google" onclick="loginGoogle()">LOGIN WITH GOOGLE</button>
+            <button class="btn" onclick="playOffline()">MAIN TANPA LOGIN</button>
+        </div>
+
+        <div id="start-screen" class="screen">
+            <h1>READY?</h1>
+            <button class="btn" onclick="startGame()">START GAME</button>
         </div>
 
         <div id="game-over-screen" class="screen">
-            <h1>GAME OVER</h1>
-            <div class="score-board">
-                <p>SCORE</p>
-                <div id="final-score" style="font-size: 1.5rem; margin-top:5px;">0</div>
-                <br>
-                <p>BEST</p>
-                <div id="best-score" style="font-size: 1.5rem; margin-top:5px;">0</div>
+            <h1 style="font-size:1.2rem; margin-bottom:10px;">GAME OVER</h1>
+            
+            <div class="leaderboard-box">
+                <div style="text-align: center; margin-bottom: 5px;">YOUR SCORE</div>
+                <div id="final-score" style="font-size: 1.5rem; text-align: center; color:#E86101;">0</div>
+                <div id="rank-display" style="text-align: center; font-size: 0.7rem; margin-top:5px; color:#543847;">Processing Rank...</div>
             </div>
-            <button onclick="resetGame()">RETRY</button>
+
+            <div class="leaderboard-box">
+                <div style="text-align: center; border-bottom: 2px solid #543847; margin-bottom:5px;">TOP 5 WORLD</div>
+                <div id="leaderboard-list">
+                    <div>Loading...</div>
+                </div>
+            </div>
+
+            <button class="btn" onclick="resetGame()">MAIN LAGI</button>
         </div>
     </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, query, orderBy, limit, getDocs, getCountFromServer, where } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+        // --- 1. KONFIGURASI FIREBASE ---
+        // GANTI BAGIAN INI DENGAN CONFIG DARI FIREBASE CONSOLE ANDA
+        const firebaseConfig = {
+  apiKey: "AIzaSyDH6cBMyBCNdzG_tdJNs28AZZIm8HnO8l4",
+  authDomain: "flytap-ca3ee.firebaseapp.com",
+  projectId: "flytap-ca3ee",
+  storageBucket: "flytap-ca3ee.firebasestorage.app",
+  messagingSenderId: "690738199480",
+  appId: "1:690738199480:web:b1b442690440db79016d4d"
+};
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        let currentUser = null;
+
+        // --- FUNGSI LOGIN / LOGOUT ---
+        window.loginGoogle = () => {
+            signInWithPopup(auth, provider).then((result) => {
+                // Sukses login
+            }).catch((error) => {
+                console.error(error);
+                alert("Login Gagal: " + error.message);
+            });
+        };
+
+        window.logout = () => {
+            signOut(auth).then(() => window.location.reload());
+        };
+
+        window.playOffline = () => {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('start-screen').style.display = 'block';
+        };
+
+        // Cek Status Login
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('start-screen').style.display = 'block';
+                
+                // Show user info
+                document.getElementById('user-info').style.display = 'flex';
+                document.getElementById('user-name').innerText = user.displayName.split(' ')[0]; // Nama Depan
+                document.getElementById('user-photo').src = user.photoURL;
+            } else {
+                currentUser = null;
+                document.getElementById('login-screen').style.display = 'flex';
+                document.getElementById('user-info').style.display = 'none';
+            }
+        });
+
+        // --- FUNGSI DATABASE & ANTI-CHEAT ---
+        
+        async function saveScoreToFirebase(score, startTime) {
+            if (!currentUser) return;
+
+            const endTime = Date.now();
+            const duration = (endTime - startTime) / 1000; // detik
+            
+            // --- VALIDASI ANTI-CHEAT SEDERHANA ---
+            // Secara teori, untuk dapat 1 poin butuh minimal ~1.5 detik (tergantung pipe spawn rate)
+            // Pipe spawn rate kita ~110 frame. 60fps. Jadi ~1.8 detik per pipa.
+            // Kita beri toleransi longgar (misal 1 detik per poin).
+            // Jika score 10 tapi durasi cuma 2 detik -> Jelas Cheat.
+            const minTimeRequired = score * 1.0; 
+
+            if (score > 5 && duration < minTimeRequired) {
+                alert("Cheat Terdeteksi! Skor tidak disimpan.");
+                return;
+            }
+
+            try {
+                const userRef = doc(db, "scores", currentUser.uid);
+                
+                // Cek skor lama dulu
+                const docSnap = await getDoc(userRef);
+                let currentHighScore = 0;
+                if (docSnap.exists()) {
+                    currentHighScore = docSnap.data().score;
+                }
+
+                // Hanya simpan jika skor baru lebih tinggi
+                if (score > currentHighScore) {
+                    await setDoc(userRef, {
+                        name: currentUser.displayName,
+                        photo: currentUser.photoURL,
+                        score: score,
+                        timestamp: endTime
+                    });
+                }
+                
+                // Setelah simpan, update UI Leaderboard
+                updateLeaderboardUI(score);
+
+            } catch (e) {
+                console.error("Error saving score: ", e);
+            }
+        }
+
+        async function updateLeaderboardUI(myCurrentScore) {
+            const listEl = document.getElementById('leaderboard-list');
+            const rankEl = document.getElementById('rank-display');
+            listEl.innerHTML = "Loading...";
+
+            // 1. Ambil Top 5 Global
+            const q = query(collection(db, "scores"), orderBy("score", "desc"), limit(5));
+            const querySnapshot = await getDocs(q);
+            
+            let html = "";
+            let rank = 1;
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                const isMe = currentUser && doc.id === currentUser.uid;
+                html += `
+                    <div class="rank-row ${isMe ? 'rank-me' : ''}">
+                        <span>#${rank} ${data.name.substring(0, 10)}</span>
+                        <span>${data.score}</span>
+                    </div>
+                `;
+                rank++;
+            });
+            listEl.innerHTML = html;
+
+            // 2. Hitung Ranking User (Query Agregasi)
+            if (currentUser) {
+                // Cari berapa banyak orang yang skornya LEBIH BESAR dari skor tertinggi user
+                // Kita perlu ambil High Score user dari DB (bukan score barusan main, karena mungkin belum highscore)
+                const userRef = doc(db, "scores", currentUser.uid);
+                const userSnap = await getDoc(userRef);
+                const myHighScore = userSnap.exists() ? userSnap.data().score : 0;
+
+                const rankQuery = query(collection(db, "scores"), where("score", ">", myHighScore));
+                const snapshot = await getCountFromServer(rankQuery);
+                const myRank = snapshot.data().count + 1; // Rank adalah (jumlah orang di atas saya) + 1
+
+                rankEl.innerText = `You are Ranked #${myRank} in the World`;
+            } else {
+                rankEl.innerText = "Login to see your rank";
+            }
+        }
+
+        // Expose function to global scope so Game Loop can call it
+        window.submitGameScore = (score, startTime) => {
+            saveScoreToFirebase(score, startTime);
+        };
+
+    </script>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -138,7 +300,6 @@
         
         const scoreEl = document.getElementById('score');
         const finalScoreEl = document.getElementById('final-score');
-        const bestScoreEl = document.getElementById('best-score');
         const startScreen = document.getElementById('start-screen');
         const gameOverScreen = document.getElementById('game-over-screen');
 
@@ -149,324 +310,149 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // --- KONFIGURASI KESULITAN ---
-        // Gravity lebih tinggi = jatuh lebih cepat (terasa berat)
-        // Gap lebih kecil = lebih sulit masuk pipa
         const CONFIG = {
             gravity: 0.45,   
             jumpStrength: 7.5, 
-            pipeGap: 105,     // Jarak vertikal pipa (Sempit!)
-            pipeSpeed: 2.5,   // Kecepatan gerak pipa
-            pipeSpawnRate: 110 // Jarak antar pipa baru (frame)
+            pipeGap: 105,     
+            pipeSpeed: 2.5,   
+            pipeSpawnRate: 110 
         };
 
         let frames = 0;
         let score = 0;
-        let highScore = localStorage.getItem('flappyHighScore') || 0;
         let isGameRunning = false;
-        let isGameOver = false;
+        let gameStartTime = 0; // Untuk Anti-Cheat
 
         const bird = {
-            x: 50,
-            y: 150,
-            radius: 14, // Hitbox radius
-            velocity: 0,
-            rotation: 0,
-            
+            x: 50, y: 150, radius: 14, velocity: 0, rotation: 0,
             draw: function() {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                
-                // Rotasi: Nukik tajam saat jatuh, dongak saat lompat
+                ctx.save(); ctx.translate(this.x, this.y);
                 let targetRotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (this.velocity * 0.12)));
-                this.rotation = targetRotation;
-                ctx.rotate(this.rotation);
-
-                // 1. Badan (Kuning)
-                ctx.beginPath();
-                ctx.arc(0, 0, 15, 0, Math.PI*2);
-                ctx.fillStyle = "#FFD700";
-                ctx.fill();
-                ctx.lineWidth = 2;
-                ctx.strokeStyle = "#000";
-                ctx.stroke();
-
-                // 2. Mata Besar (Putih & Pupil Hitam)
-                // Putih mata
-                ctx.beginPath();
-                ctx.arc(6, -6, 8, 0, Math.PI*2); 
-                ctx.fillStyle = "#FFF";
-                ctx.fill();
-                ctx.stroke(); // Outline mata
-                // Pupil
-                ctx.beginPath();
-                ctx.arc(8, -6, 2, 0, Math.PI*2); 
-                ctx.fillStyle = "#000";
-                ctx.fill();
-
-                // 3. Paruh (Oranye Tebal)
-                ctx.beginPath();
-                ctx.moveTo(8, 2);
-                ctx.lineTo(20, 8); // Ujung paruh
-                ctx.lineTo(8, 14);
-                ctx.closePath();
-                ctx.fillStyle = "#E86101";
-                ctx.fill();
-                ctx.stroke();
-
-                // 4. Sayap (Putih kecil di tengah)
-                ctx.beginPath();
-                ctx.ellipse(-6, 4, 8, 5, -0.2, 0, Math.PI*2);
-                ctx.fillStyle = "#FFF";
-                ctx.fill();
-                ctx.stroke();
-
+                this.rotation = targetRotation; ctx.rotate(this.rotation);
+                
+                // (Menggambar Burung - Kode Sama seperti sebelumnya)
+                ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2); ctx.fillStyle = "#FFD700"; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = "#000"; ctx.stroke();
+                ctx.beginPath(); ctx.arc(6, -6, 8, 0, Math.PI*2); ctx.fillStyle = "#FFF"; ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.arc(8, -6, 2, 0, Math.PI*2); ctx.fillStyle = "#000"; ctx.fill();
+                ctx.beginPath(); ctx.moveTo(8, 2); ctx.lineTo(20, 8); ctx.lineTo(8, 14); ctx.closePath(); ctx.fillStyle = "#E86101"; ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.ellipse(-6, 4, 8, 5, -0.2, 0, Math.PI*2); ctx.fillStyle = "#FFF"; ctx.fill(); ctx.stroke();
                 ctx.restore();
             },
-            
             update: function() {
-                this.velocity += CONFIG.gravity;
-                this.y += this.velocity;
-
-                // Tabrakan lantai
-                if (this.y + this.radius >= canvas.height - ground.h) {
-                    this.y = canvas.height - ground.h - this.radius;
-                    gameOver();
-                }
-                
-                // Atap limit
-                if (this.y - this.radius <= 0) {
-                    this.y = this.radius;
-                    this.velocity = 0;
-                }
+                this.velocity += CONFIG.gravity; this.y += this.velocity;
+                if (this.y + this.radius >= canvas.height - ground.h) { this.y = canvas.height - ground.h - this.radius; gameOver(); }
+                if (this.y - this.radius <= 0) { this.y = this.radius; this.velocity = 0; }
             },
-            
-            flap: function() {
-                this.velocity = -CONFIG.jumpStrength;
-            }
+            flap: function() { this.velocity = -CONFIG.jumpStrength; }
         };
 
         const pipes = {
-            position: [],
-            w: 52, // Lebar pipa klasik
-            
+            position: [], w: 52,
             draw: function() {
                 for (let i = 0; i < this.position.length; i++) {
                     let p = this.position[i];
                     let topY = p.y;
                     let bottomY = p.y + CONFIG.pipeGap;
-
-                    // Pipa Hijau dengan Outline Hitam (Style Kartun)
-                    ctx.fillStyle = "#73BF2E";
-                    ctx.strokeStyle = "#000";
-                    ctx.lineWidth = 2;
-
-                    // Pipa Atas
-                    ctx.fillRect(p.x, 0, this.w, topY);
-                    ctx.strokeRect(p.x, -2, this.w, topY+2); // -2 biar border atas hilang
                     
-                    // Kepala Pipa Atas (Lebih lebar dikit)
-                    ctx.fillRect(p.x - 2, topY - 24, this.w + 4, 24);
-                    ctx.strokeRect(p.x - 2, topY - 24, this.w + 4, 24);
-                    
-                    // Highlight Pipa (Efek Kilap)
-                    ctx.fillStyle = "#9CE659"; // Hijau muda
-                    ctx.fillRect(p.x + 4, 0, 4, topY - 24); // Garis kilap badan
-                    ctx.fillRect(p.x + 2, topY - 24, 4, 22); // Garis kilap kepala
-
-                    // --- Pipa Bawah ---
-                    ctx.fillStyle = "#73BF2E";
+                    ctx.fillStyle = "#73BF2E"; ctx.strokeStyle = "#000"; ctx.lineWidth = 2;
+                    // Atas
+                    ctx.fillRect(p.x, 0, this.w, topY); ctx.strokeRect(p.x, -2, this.w, topY+2);
+                    ctx.fillRect(p.x - 2, topY - 24, this.w + 4, 24); ctx.strokeRect(p.x - 2, topY - 24, this.w + 4, 24);
+                    // Bawah
                     let botH = canvas.height - ground.h - bottomY;
-                    
-                    ctx.fillRect(p.x, bottomY, this.w, botH);
-                    ctx.strokeRect(p.x, bottomY, this.w, botH+2); // +2 border bawah hilang
-                    
-                    // Kepala Pipa Bawah
-                    ctx.fillRect(p.x - 2, bottomY, this.w + 4, 24);
-                    ctx.strokeRect(p.x - 2, bottomY, this.w + 4, 24);
-
-                    // Highlight Pipa Bawah
-                    ctx.fillStyle = "#9CE659"; 
-                    ctx.fillRect(p.x + 4, bottomY + 26, 4, botH); 
-                    ctx.fillRect(p.x + 2, bottomY + 2, 4, 20); 
-
+                    ctx.fillRect(p.x, bottomY, this.w, botH); ctx.strokeRect(p.x, bottomY, this.w, botH+2);
+                    ctx.fillRect(p.x - 2, bottomY, this.w + 4, 24); ctx.strokeRect(p.x - 2, bottomY, this.w + 4, 24);
                 }
             },
-
             update: function() {
                 if (frames % CONFIG.pipeSpawnRate === 0) {
-                    // Logic Random Pipa (Memastikan celah selalu bisa dilewati tapi sulit)
-                    let minP = 50;
-                    let maxP = canvas.height - ground.h - CONFIG.pipeGap - 50;
+                    let minP = 50; let maxP = canvas.height - ground.h - CONFIG.pipeGap - 50;
                     let y = Math.floor(Math.random() * (maxP - minP + 1) + minP);
-                    
-                    this.position.push({
-                        x: canvas.width,
-                        y: y,
-                        passed: false
-                    });
+                    this.position.push({ x: canvas.width, y: y, passed: false });
                 }
-
                 for (let i = 0; i < this.position.length; i++) {
-                    let p = this.position[i];
-                    p.x -= CONFIG.pipeSpeed;
+                    let p = this.position[i]; p.x -= CONFIG.pipeSpeed;
+                    
+                    // Collision Logic
+                    let birdLeft = bird.x - bird.radius + 4; let birdRight = bird.x + bird.radius - 4;
+                    let birdTop = bird.y - bird.radius + 4; let birdBottom = bird.y + bird.radius - 4;
+                    let pipeLeft = p.x; let pipeRight = p.x + this.w;
+                    let pipeTopY = p.y; let pipeBottomY = p.y + CONFIG.pipeGap;
 
-                    // Collision Detection (Hitbox kotak vs Lingkaran Burung)
-                    // Disederhanakan menjadi kotak vs kotak agar fair untuk player
-                    let birdLeft = bird.x - bird.radius + 4; // Tolerance dikit
-                    let birdRight = bird.x + bird.radius - 4;
-                    let birdTop = bird.y - bird.radius + 4;
-                    let birdBottom = bird.y + bird.radius - 4;
-
-                    let pipeLeft = p.x;
-                    let pipeRight = p.x + this.w;
-                    let pipeTopY = p.y;
-                    let pipeBottomY = p.y + CONFIG.pipeGap;
-
-                    // Cek Tabrakan Horizontal
                     if (birdRight > pipeLeft && birdLeft < pipeRight) {
-                        // Cek Tabrakan Vertikal (Kena atas atau Kena bawah)
-                        if (birdTop < pipeTopY || birdBottom > pipeBottomY) {
-                            gameOver();
-                        }
+                        if (birdTop < pipeTopY || birdBottom > pipeBottomY) { gameOver(); }
                     }
-
                     if (p.x + this.w < bird.x && !p.passed) {
-                        score++;
-                        scoreEl.innerText = score;
-                        p.passed = true;
+                        score++; scoreEl.innerText = score; p.passed = true;
                     }
-
-                    if (p.x + this.w < 0) {
-                        this.position.shift();
-                        i--; // Adjust index karena array berkurang
-                    }
+                    if (p.x + this.w < 0) { this.position.shift(); i--; }
                 }
             },
             reset: function() { this.position = []; }
         };
 
         const ground = {
-            x: 0,
-            h: 112, // Tanah tinggi seperti game asli
+            x: 0, h: 112,
             draw: function() {
-                // Pola Tanah
-                ctx.fillStyle = "#DED895";
                 let topGroundY = canvas.height - this.h;
-                ctx.fillRect(0, topGroundY, canvas.width, this.h);
-                
-                // Garis Border Tanah
-                ctx.beginPath();
-                ctx.moveTo(0, topGroundY);
-                ctx.lineTo(canvas.width, topGroundY);
-                ctx.strokeStyle = "#543847";
-                ctx.lineWidth = 3;
-                ctx.stroke();
-                
-                // Rumput hijau di atas tanah
-                ctx.fillStyle = "#73BF2E";
-                ctx.fillRect(0, topGroundY, canvas.width, 12);
-                ctx.beginPath();
-                ctx.moveTo(0, topGroundY + 12);
-                ctx.lineTo(canvas.width, topGroundY + 12);
-                ctx.strokeStyle = "#558C22";
-                ctx.lineWidth = 2;
-                ctx.stroke();
-
-                // Pattern miring (Parallax effect)
-                ctx.strokeStyle = "#D0C874"; 
-                ctx.lineWidth = 2;
-                for(let i=0; i<canvas.width / 20 + 2; i++) {
-                    let offset = this.x % 20;
-                    let startX = (i * 20) + offset;
-                    ctx.beginPath();
-                    ctx.moveTo(startX, topGroundY + 14);
-                    ctx.lineTo(startX - 10, canvas.height);
-                    ctx.stroke();
-                }
+                ctx.fillStyle = "#DED895"; ctx.fillRect(0, topGroundY, canvas.width, this.h);
+                ctx.beginPath(); ctx.moveTo(0, topGroundY); ctx.lineTo(canvas.width, topGroundY); ctx.strokeStyle = "#543847"; ctx.lineWidth = 3; ctx.stroke();
+                ctx.fillStyle = "#73BF2E"; ctx.fillRect(0, topGroundY, canvas.width, 12);
+                ctx.beginPath(); ctx.moveTo(0, topGroundY + 12); ctx.lineTo(canvas.width, topGroundY + 12); ctx.strokeStyle = "#558C22"; ctx.lineWidth = 2; ctx.stroke();
             },
-            update: function() {
-                this.x -= CONFIG.pipeSpeed;
-            }
+            update: function() { this.x -= CONFIG.pipeSpeed; }
         };
 
-        function startGame() {
+        window.startGame = () => {
             startScreen.style.display = 'none';
             gameOverScreen.style.display = 'none';
             isGameRunning = true;
-            isGameOver = false;
-            bird.y = canvas.height / 2;
-            bird.velocity = 0;
-            bird.rotation = 0;
-            score = 0;
-            frames = 0;
+            bird.y = canvas.height / 2; bird.velocity = 0; bird.rotation = 0;
+            score = 0; frames = 0;
             scoreEl.innerText = score;
             pipes.reset();
+            
+            gameStartTime = Date.now(); // CATAT WAKTU MULAI (ANTI-CHEAT)
+            
             loop();
-        }
+        };
 
         function gameOver() {
+            if (!isGameRunning) return;
             isGameRunning = false;
-            isGameOver = true;
             
-            if (score > highScore) {
-                highScore = score;
-                localStorage.setItem('flappyHighScore', highScore);
-            }
-
             finalScoreEl.innerText = score;
-            bestScoreEl.innerText = highScore;
+            scoreEl.innerText = "";
             gameOverScreen.style.display = 'block';
-            scoreEl.innerText = ""; // Sembunyikan skor main saat game over
+
+            // KIRIM DATA KE FIREBASE (Jika login)
+            if (window.submitGameScore) {
+                window.submitGameScore(score, gameStartTime);
+            }
         }
 
-        function resetGame() {
-            startGame();
-        }
+        window.resetGame = () => { window.startGame(); };
 
         function inputAction(e) {
             if (e.type === 'keydown' && e.code !== 'Space') return;
-            if (isGameRunning) {
-                bird.flap();
-            }
+            if (isGameRunning) bird.flap();
         }
 
-        window.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') inputAction(e);
-        });
-        
-        canvas.addEventListener('touchstart', (e) => {
-            inputAction(e);
-            e.preventDefault();
-        }, {passive: false});
-        
+        window.addEventListener('keydown', (e) => { if (e.code === 'Space') inputAction(e); });
+        canvas.addEventListener('touchstart', (e) => { inputAction(e); e.preventDefault(); }, {passive: false});
         canvas.addEventListener('mousedown', inputAction);
 
         function loop() {
             if (!isGameRunning) return;
-
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Background Pemandangan Statis (Gedung jauh) - Opsional Simpel
-            ctx.fillStyle = "#A3E4E8"; // Sedikit beda dr langit atas
-            ctx.fillRect(0, canvas.height - ground.h - 50, canvas.width, 50);
-
-            pipes.update();
-            pipes.draw();
-            
-            ground.update();
-            ground.draw();
-            
-            bird.update();
-            bird.draw();
-            
+            ctx.fillStyle = "#A3E4E8"; ctx.fillRect(0, canvas.height - ground.h - 50, canvas.width, 50);
+            pipes.update(); pipes.draw();
+            ground.update(); ground.draw();
+            bird.update(); bird.draw();
             frames++;
             requestAnimationFrame(loop);
         }
-
-        // Initial Draw
         ground.draw();
-        
     </script>
 </body>
 </html>
