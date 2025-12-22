@@ -2,43 +2,47 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flappy Bird Final Fixed</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Flappy Bird Fixed v2</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
         /* CSS RESET & LAYOUT */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
         body {
             margin: 0; padding: 0;
             display: flex; justify-content: center; align-items: center;
-            height: 100vh;
+            /* Menggunakan dvh untuk mengatasi address bar mobile browser */
+            height: 100dvh; 
             background-color: #222;
             font-family: 'Press Start 2P', cursive;
             overflow: hidden;
-            touch-action: none; /* Mencegah scroll/zoom di HP */
+            touch-action: none;
             user-select: none;
+            position: fixed; /* Kunci posisi body */
+            width: 100%;
         }
 
         #game-container {
             position: relative;
             box-shadow: 0 0 30px rgba(0,0,0,0.8);
-            width: 100%; max-width: 420px; 
-            height: 100%; max-height: 800px;
+            width: 100%; max-width: 480px; 
+            height: 100%; 
             background: #70C5CE; 
             overflow: hidden;
         }
 
-        canvas { display: block; width: 100%; height: 100%; }
+        canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 
         /* UI LAYERS */
         #ui-layer {
-            position: absolute; top: 10%; width: 100%;
+            position: absolute; top: 12%; width: 100%;
             text-align: center; pointer-events: none; z-index: 20;
         }
 
         #score {
-            font-size: 3rem; color: white;
+            font-size: 3.5rem; color: white;
             -webkit-text-stroke: 2px #000;
             text-shadow: 4px 4px 0 #000;
         }
@@ -46,11 +50,12 @@
         .screen {
             position: absolute; top: 0; left: 0;
             width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4); /* Dim background */
+            background: rgba(0,0,0,0.4); 
+            backdrop-filter: blur(2px); /* Efek blur modern */
             display: flex; flex-direction: column;
             justify-content: center; align-items: center;
             z-index: 30;
-            display: none; /* Hidden by default */
+            display: none;
         }
 
         /* BUTTON STYLES */
@@ -63,49 +68,47 @@
             text-transform: uppercase; width: 80%;
             pointer-events: auto;
             transition: transform 0.1s;
+            position: relative;
         }
         .btn:active { transform: translateY(4px); box-shadow: 0 0 0 #994000; }
         .btn-google { background: #4285F4; box-shadow: 0 4px 0 #0d47a1; }
         .btn-share { background: #25D366; box-shadow: 0 4px 0 #128C7E; }
         
-        .btn-tab-container { display: flex; gap: 5px; margin-top: 10px; }
-        .btn-small { width: auto; font-size: 0.6rem; padding: 8px; margin: 0; flex: 1; }
-        .btn-active { background: #73BF2E; box-shadow: 0 4px 0 #4c8519; }
+        .btn-tab-container { display: flex; gap: 8px; margin-top: 10px; width: 85%; }
+        .btn-small { width: auto; font-size: 0.6rem; padding: 10px 5px; margin: 0; flex: 1; }
+        .btn-active { background: #73BF2E; box-shadow: 0 4px 0 #4c8519; filter: brightness(1.1); }
 
-        /* TEXT STYLES */
         h1 { 
             color: #F4D03F; -webkit-text-stroke: 2px #000;
-            text-shadow: 4px 4px 0 #000; font-size: 2rem; margin-bottom: 30px;
-            line-height: 1.5; text-align: center;
+            text-shadow: 4px 4px 0 #000; font-size: 2.2rem; margin-bottom: 25px;
+            line-height: 1.4; text-align: center;
         }
         
-        /* LEADERBOARD & INFO */
         .leaderboard-box {
             background: #DED895; border: 3px solid #543847;
             padding: 10px; border-radius: 10px; margin-bottom: 10px;
             color: #543847; font-size: 0.7rem; width: 85%;
-            max-height: 200px; overflow-y: auto;
+            max-height: 220px; overflow-y: auto;
         }
         
         .rank-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 6px 0; border-bottom: 1px dashed #543847; text-align: left;
+            padding: 8px 0; border-bottom: 1px dashed #543847; text-align: left;
         }
-        .rank-me { color: #E86101; font-weight: bold; }
+        .rank-me { color: #E86101; font-weight: bold; background: rgba(232, 97, 1, 0.1); padding: 8px 4px; border-radius: 4px; }
         .city-tag { font-size: 0.5rem; color: #777; display: block; margin-top:2px; }
 
-        /* HUD */
         #user-info {
-            position: absolute; top: 10px; left: 10px;
+            position: absolute; top: 15px; left: 15px;
             font-size: 0.6rem; color: white; z-index: 25;
             text-shadow: 1px 1px 0 #000;
             display: flex; align-items: center; gap: 8px;
         }
-        #user-photo { width: 30px; height: 30px; border-radius: 50%; border: 2px solid white;}
+        #user-photo { width: 32px; height: 32px; border-radius: 50%; border: 2px solid white;}
         #location-badge {
-            position: absolute; top: 10px; right: 10px;
+            position: absolute; top: 15px; right: 15px;
             background: rgba(0,0,0,0.6); color: white;
-            padding: 5px 8px; border-radius: 6px; font-size: 0.6rem;
+            padding: 6px 10px; border-radius: 20px; font-size: 0.6rem;
             z-index: 25; display: none; border: 1px solid white;
         }
     </style>
@@ -118,35 +121,36 @@
         <div id="user-info" style="display:none;">
             <img id="user-photo" src="" alt="user">
             <div><div id="user-name">Player</div></div>
-            <button id="btn-logout" style="font-size:0.5rem; padding:4px 6px; background:#ff4444; border:1px solid #fff; color:white; border-radius:4px; font-family:inherit;">LOGOUT</button>
+            <button id="btn-logout" style="font-size:0.5rem; padding:4px 8px; background:#ff4444; border:1px solid #fff; color:white; border-radius:4px; font-family:inherit; margin-left: 5px; cursor: pointer;">LOGOUT</button>
         </div>
         <div id="location-badge">📍 Detecting...</div>
         <div id="ui-layer"><div id="score">0</div></div>
 
         <div id="loading-screen" class="screen" style="display: flex; background: #70C5CE;">
-            <h1 style="font-size: 1rem;">CONNECTING...</h1>
+            <h1 style="font-size: 1rem; animation: pulse 1s infinite;">CONNECTING...</h1>
         </div>
 
         <div id="login-screen" class="screen">
             <h1>FLAPPY<br>BIRD</h1>
             <button id="btn-login" class="btn btn-google">LOGIN WITH GOOGLE</button>
             <button id="btn-offline" class="btn">MAIN TANPA LOGIN</button>
+            <div style="margin-top:20px; font-size:0.5rem; color: white;">v2.1 (Fixed Physics)</div>
         </div>
 
         <div id="start-screen" class="screen">
             <h1>READY?</h1>
             <div style="font-size: 0.7rem; color: #fff; margin-bottom: 20px;">Location: <span id="start-location">Unknown</span></div>
-            <button id="btn-start" class="btn">START GAME</button>
+            <button id="btn-start" class="btn">TAP TO START</button>
         </div>
 
         <div id="game-over-screen" class="screen">
-            <div class="leaderboard-box" style="background: #E8D6A5; text-align: center;">
-                <div>SCORE</div>
-                <div id="final-score" style="font-size: 2rem; color:#E86101; margin: 5px 0;">0</div>
-                <button id="btn-share" class="btn btn-share" style="width: 100%; margin: 5px 0; padding: 10px;">SHARE 📢</button>
+            <div class="leaderboard-box" style="background: #E8D6A5; text-align: center; margin-bottom: 5px;">
+                <div style="font-size: 0.6rem; color:#888;">YOUR SCORE</div>
+                <div id="final-score" style="font-size: 2.5rem; color:#E86101; margin: 5px 0;">0</div>
+                <button id="btn-share" class="btn btn-share" style="width: 100%; margin: 5px 0; padding: 12px; font-size: 0.8rem;">SHARE SCORE 📢</button>
             </div>
 
-            <div class="btn-tab-container" style="width: 85%;">
+            <div class="btn-tab-container">
                 <button id="btn-tab-world" class="btn btn-small btn-active">WORLD 🌍</button>
                 <button id="btn-tab-city" class="btn btn-small">MY CITY 🏘️</button>
             </div>
@@ -156,14 +160,15 @@
                 <div id="leaderboard-list">Loading...</div>
             </div>
 
-            <button id="btn-retry" class="btn">RETRY</button>
+            <button id="btn-retry" class="btn" style="margin-top: 5px;">TRY AGAIN</button>
         </div>
     </div>
 
     <script type="module">
-        // 1. ERROR CATCHER (Supaya error muncul di HP)
+        // 1. ERROR HANDLER GLOBAL
         window.onerror = function(msg, url, line) {
-            alert("Error Sistem: " + msg + "\nBaris: " + line);
+            console.error("Error: " + msg);
+            // Jangan alert error ke user jika minor, cukup log
             return false;
         };
 
@@ -172,84 +177,121 @@
         import { getFirestore, collection, doc, setDoc, getDoc, query, orderBy, limit, getDocs, where } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
         // ==========================================
-        // 2. KONFIGURASI FIREBASE (WAJIB DIISI!)
+        // 2. KONFIGURASI FIREBASE
         // ==========================================
         const firebaseConfig = {
-  apiKey: "AIzaSyDH6cBMyBCNdzG_tdJNs28AZZIm8HnO8l4",
-  authDomain: "flytap-ca3ee.firebaseapp.com",
-  projectId: "flytap-ca3ee",
-  storageBucket: "flytap-ca3ee.firebasestorage.app",
-  messagingSenderId: "690738199480",
-  appId: "1:690738199480:web:b1b442690440db79016d4d"
-};
-        // Init Variables
+            apiKey: "AIzaSyDH6cBMyBCNdzG_tdJNs28AZZIm8HnO8l4",
+            authDomain: "flytap-ca3ee.firebaseapp.com",
+            projectId: "flytap-ca3ee",
+            storageBucket: "flytap-ca3ee.firebasestorage.app",
+            messagingSenderId: "690738199480",
+            appId: "1:690738199480:web:b1b442690440db79016d4d"
+        };
+
         let app, auth, db, provider;
         let currentUser = null;
         let userLocation = { city: "Unknown", country: "Unknown" };
-        let currentTab = 'world';
+        let isOfflineMode = false;
 
-        // Init Firebase Safe Mode
-        try {
-            if(firebaseConfig.apiKey.includes("GANTI")) {
-                throw new Error("API KEY BELUM DIISI! Edit file index.html");
+        // Init Firebase dengan Safety Try-Catch
+        async function initFirebase() {
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                provider = new GoogleAuthProvider();
+                
+                onAuthStateChanged(auth, (user) => {
+                    document.getElementById('loading-screen').style.display = 'none';
+                    if(user) {
+                        currentUser = user;
+                        showScreen('start');
+                        updateUserInfo(user);
+                    } else {
+                        currentUser = null;
+                        showScreen('login');
+                    }
+                });
+            } catch (e) {
+                console.error("Firebase Error:", e);
+                isOfflineMode = true;
+                document.getElementById('loading-screen').style.display = 'none';
+                showScreen('login');
+                alert("Mode Offline: Fitur Leaderboard tidak aktif.");
             }
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-            provider = new GoogleAuthProvider();
-        } catch (e) {
-            alert(e.message);
+        }
+
+        function updateUserInfo(user) {
+            const ui = document.getElementById('user-info');
+            ui.style.display = 'flex';
+            // Fix: Handle jika displayName null
+            const name = user.displayName ? user.displayName.split(' ')[0] : 'Player';
+            document.getElementById('user-name').innerText = name;
+            document.getElementById('user-photo').src = user.photoURL || 'https://via.placeholder.com/30';
         }
 
         // ==========================================
-        // 3. GAME ENGINE & LOGIC
+        // 3. GAME ENGINE (FIXED PHYSICS)
         // ==========================================
         const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { alpha: false }); // Optimasi performa
         
-        // DOM Elements
         const screens = {
             loading: document.getElementById('loading-screen'),
             login: document.getElementById('login-screen'),
             start: document.getElementById('start-screen'),
             gameOver: document.getElementById('game-over-screen')
         };
-        const els = {
-            score: document.getElementById('score'),
-            finalScore: document.getElementById('final-score'),
-            locBadge: document.getElementById('location-badge'),
-            startLoc: document.getElementById('start-location'),
-            list: document.getElementById('leaderboard-list'),
-            title: document.getElementById('leaderboard-title'),
-            btnCity: document.getElementById('btn-tab-city'),
-            btnWorld: document.getElementById('btn-tab-world')
-        };
 
+        function showScreen(name) {
+            Object.values(screens).forEach(s => s.style.display = 'none');
+            if(screens[name]) screens[name].style.display = 'flex';
+        }
+
+        // CONFIG DIGANTI UNTUK 60 FPS CONSISTENCY
         const CONFIG = {
-            gravity: 0.45, jump: 7.5, gap: 115, speed: 2.5, spawnRate: 110
+            gravity: 0.4, 
+            jump: 7, 
+            gap: 120, // Sedikit diperlebar agar lebih mudah
+            speed: 3, 
+            spawnRate: 100
         };
 
         let state = {
             frames: 0, score: 0, running: false, startTime: 0, 
             clouds: [], mountains: []
         };
+        
+        // Variables for FPS Control
+        let lastTime = 0;
+        const fps = 60;
+        const interval = 1000/fps;
 
-        // Resize Canvas Proper
+        // Resize Logic yang lebih pintar
         function resize() {
-            canvas.width = canvas.parentElement.clientWidth;
-            canvas.height = canvas.parentElement.clientHeight;
+            const container = document.getElementById('game-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            // Redraw background saat resize agar tidak blank
+            if(!state.running) {
+                drawBg(0);
+                ground.draw();
+            }
         }
         window.addEventListener('resize', resize);
-        resize();
+        // Panggil resize beberapa kali untuk memastikan mobile browser sudah settle
+        setTimeout(resize, 500);
 
-        // --- BACKGROUND SYSTEM ---
+        // --- BACKGROUND ---
         const colors = {
             daySky: [112, 197, 206], nightSky: [20, 24, 82],
             dayMtn: [86, 161, 171], nightMtn: [15, 18, 60],
             dayCloud: [255, 255, 255], nightCloud: [80, 80, 120]
         };
 
-        function lerp(a, b, t) { return `rgb(${Math.round(a[0]+t*(b[0]-a[0]))},${Math.round(a[1]+t*(b[1]-a[1]))},${Math.round(a[2]+t*(b[2]-a[2]))})`; }
+        function lerp(a, b, t) { 
+            return `rgb(${Math.round(a[0]+t*(b[0]-a[0]))},${Math.round(a[1]+t*(b[1]-a[1]))},${Math.round(a[2]+t*(b[2]-a[2]))})`; 
+        }
 
         function initBg() {
             state.clouds = []; state.mountains = [];
@@ -266,7 +308,7 @@
             ctx.fillStyle = lerp(colors.dayCloud, colors.nightCloud, pos);
             state.clouds.forEach(c => {
                 ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI*2); ctx.fill();
-                if(state.running) c.x -= c.s; 
+                if(state.running) c.x -= c.s * 0.5; // Slow cloud
                 if(c.x < -50) c.x = canvas.width + 50;
             });
 
@@ -289,19 +331,31 @@
                 
                 // Bird Art
                 ctx.beginPath(); ctx.ellipse(0,0,16,13,0,0,Math.PI*2);
-                ctx.fillStyle="#FFD700"; ctx.fill(); ctx.stroke(); // Body
-                ctx.beginPath(); ctx.arc(8,-6,6,0,Math.PI*2); ctx.fillStyle="#FFF"; ctx.fill(); ctx.stroke(); // Eye White
-                ctx.beginPath(); ctx.arc(10,-6,2,0,Math.PI*2); ctx.fillStyle="#000"; ctx.fill(); // Pupil
-                ctx.beginPath(); ctx.moveTo(10,2); ctx.lineTo(22,8); ctx.lineTo(10,14); ctx.fillStyle="#E86101"; ctx.fill(); ctx.stroke(); // Beak
+                ctx.fillStyle="#FFD700"; ctx.fill(); ctx.stroke(); 
+                ctx.beginPath(); ctx.arc(8,-6,6,0,Math.PI*2); ctx.fillStyle="#FFF"; ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.arc(10,-6,2,0,Math.PI*2); ctx.fillStyle="#000"; ctx.fill(); 
+                ctx.beginPath(); ctx.moveTo(10,2); ctx.lineTo(22,8); ctx.lineTo(10,14); ctx.fillStyle="#E86101"; ctx.fill(); ctx.stroke();
                 let wingY = this.v < 0 ? 6 : -4;
-                ctx.beginPath(); ctx.ellipse(-6,wingY,9,6,-0.2,0,Math.PI*2); ctx.fillStyle="#FFF"; ctx.fill(); ctx.stroke(); // Wing
+                ctx.beginPath(); ctx.ellipse(-6,wingY,9,6,-0.2,0,Math.PI*2); ctx.fillStyle="#FFF"; ctx.fill(); ctx.stroke();
                 
                 ctx.restore();
             },
             update: function() {
-                this.v += CONFIG.gravity; this.y += this.v;
-                if(this.y >= canvas.height-112-this.r) { this.y = canvas.height-112-this.r; gameOver(); }
-                if(this.y < this.r) { this.y = this.r; this.v = 0; }
+                this.v += CONFIG.gravity; 
+                this.y += this.v;
+                
+                let floorY = canvas.height - 112;
+                
+                // Collision Floor
+                if(this.y >= floorY - this.r) { 
+                    this.y = floorY - this.r; 
+                    gameOver(); 
+                }
+                // Ceiling
+                if(this.y < this.r) { 
+                    this.y = this.r; 
+                    this.v = 0; 
+                }
             },
             flap: function() { this.v = -CONFIG.jump; }
         };
@@ -310,33 +364,59 @@
             arr: [], w: 56,
             draw: function() {
                 this.arr.forEach(p => {
-                    let topH = p.y, botY = p.y + CONFIG.gap;
+                    let topH = p.y;
+                    let botY = p.y + CONFIG.gap;
                     let botH = canvas.height - 112 - botY;
+                    
                     ctx.fillStyle="#73BF2E"; ctx.strokeStyle="#000"; ctx.lineWidth=2;
                     
-                    // Top
-                    ctx.fillRect(p.x, 0, this.w, topH); ctx.strokeRect(p.x,-2,this.w,topH+2);
-                    ctx.fillRect(p.x-3, topH-26, this.w+6, 26); ctx.strokeRect(p.x-3,topH-26,this.w+6,26);
-                    // Bot
-                    ctx.fillRect(p.x, botY, this.w, botH); ctx.strokeRect(p.x,botY,this.w,botH+2);
-                    ctx.fillRect(p.x-3, botY, this.w+6, 26); ctx.strokeRect(p.x-3,botY,this.w+6,26);
+                    // Gambar pipa hanya jika terlihat di layar (Optimasi)
+                    if(p.x < canvas.width && p.x + this.w > 0) {
+                        // Top Pipe
+                        ctx.fillRect(p.x, 0, this.w, topH); ctx.strokeRect(p.x,-2,this.w,topH+2);
+                        ctx.fillRect(p.x-3, topH-26, this.w+6, 26); ctx.strokeRect(p.x-3,topH-26,this.w+6,26);
+                        // Bottom Pipe
+                        ctx.fillRect(p.x, botY, this.w, botH); ctx.strokeRect(p.x,botY,this.w,botH+2);
+                        ctx.fillRect(p.x-3, botY, this.w+6, 26); ctx.strokeRect(p.x-3,botY,this.w+6,26);
+                    }
                 });
             },
             update: function() {
                 if(state.frames % CONFIG.spawnRate === 0) {
-                    let min = 50, max = canvas.height - 112 - CONFIG.gap - 50;
+                    // Kalkulasi tinggi pipa yang aman agar tidak error di layar pendek
+                    let min = 50;
+                    let max = canvas.height - 112 - CONFIG.gap - 50;
+                    if(max < min) max = min + 10; // Fallback jika layar sangat pendek
+                    
                     this.arr.push({ x: canvas.width, y: Math.floor(Math.random()*(max-min)+min), passed: false });
                 }
-                for(let i=0; i<this.arr.length; i++) {
-                    let p = this.arr[i]; p.x -= CONFIG.speed;
-                    // Collision
-                    if(bird.x+bird.r > p.x && bird.x-bird.r < p.x+this.w) {
-                        if(bird.y-bird.r < p.y || bird.y+bird.r > p.y+CONFIG.gap) gameOver();
+
+                // Filter pipa yang sudah lewat jauh
+                if(this.arr.length > 0 && this.arr[0].x < -60) {
+                    this.arr.shift();
+                }
+
+                for(let p of this.arr) {
+                    p.x -= CONFIG.speed;
+                    
+                    // COLLISION LOGIC (Improved Hitbox)
+                    // Hitbox burung sedikit lebih kecil (margin 4px) agar fair
+                    let hitX = bird.x + bird.r - 4;
+                    let hitYTop = bird.y - bird.r + 4;
+                    let hitYBot = bird.y + bird.r - 4;
+
+                    if(hitX > p.x && bird.x - bird.r + 4 < p.x + this.w) {
+                        if(hitYTop < p.y || hitYBot > p.y + CONFIG.gap) {
+                            gameOver();
+                        }
                     }
+                    
                     // Score
-                    if(p.x+this.w < bird.x && !p.passed) { state.score++; els.score.innerText = state.score; p.passed = true; }
-                    // Remove
-                    if(p.x < -60) { this.arr.shift(); i--; }
+                    if(p.x + this.w < bird.x && !p.passed) { 
+                        state.score++; 
+                        document.getElementById('score').innerText = state.score; 
+                        p.passed = true; 
+                    }
                 }
             }
         };
@@ -347,119 +427,138 @@
                 let y = canvas.height - this.h;
                 ctx.fillStyle="#DED895"; ctx.fillRect(0, y, canvas.width, this.h);
                 ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.lineWidth=3; ctx.stroke();
+                
+                // Grass pattern parallax
+                let offset = this.x % 20;
                 ctx.fillStyle="#73BF2E"; ctx.fillRect(0,y,canvas.width,15);
                 ctx.beginPath(); ctx.moveTo(0,y+15); ctx.lineTo(canvas.width,y+15); ctx.lineWidth=2; ctx.stroke();
+                
+                // Stripes effect
+                ctx.strokeStyle = "rgba(0,0,0,0.1)";
+                for(let i=offset; i<canvas.width; i+=20) {
+                   ctx.beginPath(); ctx.moveTo(i, y+15); ctx.lineTo(i-10, canvas.height); ctx.stroke();
+                }
+                ctx.strokeStyle = "#000"; // Reset
             },
             update: function() {
                 this.x -= CONFIG.speed; 
-                // Efek parallax sederhana lewat pola
             }
         };
 
-        // --- GAME CONTROL ---
+        // --- CORE FUNCTIONS ---
         function startGame() {
-            Object.values(screens).forEach(s => s.style.display = 'none');
-            state.running = true; state.score = 0; state.frames = 0;
-            els.score.innerText = "0";
-            bird.y = canvas.height/2; bird.v = 0;
+            showScreen('none'); // Hide all UI
+            state.running = true; 
+            state.score = 0; 
+            state.frames = 0;
+            document.getElementById('score').innerText = "0";
+            
+            // Reset posisi
+            bird.y = canvas.height/2; 
+            bird.v = 0;
             pipes.arr = [];
+            
             state.startTime = Date.now();
             initBg();
-            gameLoop();
+            
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
         }
 
         function gameOver() {
+            if(!state.running) return; // Mencegah double trigger
             state.running = false;
-            els.finalScore.innerText = state.score;
-            els.score.innerText = "";
-            screens.gameOver.style.display = 'flex';
+            
+            document.getElementById('final-score').innerText = state.score;
+            document.getElementById('score').innerText = "";
+            showScreen('gameOver');
+            
             saveScore(state.score);
             loadLeaderboard('world');
         }
 
-        function gameLoop() {
+        // MAIN LOOP DENGAN DELTA TIME FIX
+        function gameLoop(timestamp) {
             if(!state.running) return;
-            ctx.clearRect(0,0,canvas.width,canvas.height);
             
-            let cycle = (Math.sin(state.frames/2500)+1)/2; // Day/Night
-            drawBg(cycle);
-
-            pipes.update(); pipes.draw();
-            ground.update(); ground.draw();
-            bird.update(); bird.draw();
-
-            state.frames++;
             requestAnimationFrame(gameLoop);
+
+            // Throttle FPS to ~60
+            let delta = timestamp - lastTime;
+            if (delta > interval) {
+                lastTime = timestamp - (delta % interval);
+
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                
+                let cycle = (Math.sin(state.frames/2500)+1)/2; // Day/Night
+                drawBg(cycle);
+
+                pipes.update(); pipes.draw();
+                ground.update(); ground.draw();
+                bird.update(); bird.draw();
+
+                state.frames++;
+            }
         }
 
-        // Input Handler (Touch & Click)
         function handleInput(e) {
-            if((e.type === 'touchstart' || e.type === 'mousedown' || e.code === 'Space') && state.running) {
+            // Mencegah scroll/zoom browser default
+            if(e.cancelable && e.type !== 'mousedown') e.preventDefault();
+            
+            if(state.running) {
                 bird.flap();
             }
         }
-        window.addEventListener('keydown', handleInput);
-        canvas.addEventListener('touchstart', (e)=>{ e.preventDefault(); handleInput(e); }, {passive:false});
+
+        // Event Listeners
+        window.addEventListener('keydown', (e) => { if(e.code==='Space') handleInput(e); });
+        canvas.addEventListener('touchstart', handleInput, {passive: false});
         canvas.addEventListener('mousedown', handleInput);
 
-        // ==========================================
-        // 4. FIREBASE & LEADERBOARD LOGIC
-        // ==========================================
+        // --- BUTTONS ---
+        document.getElementById('btn-login').addEventListener('click', () => {
+             if(isOfflineMode) return alert("Fitur tidak tersedia saat offline.");
+             signInWithPopup(auth, provider).catch(e => alert(e.message));
+        });
         
-        // Setup Button Listeners (PENGGANTI ONCLICK)
-        document.getElementById('btn-login').addEventListener('click', () => signInWithPopup(auth, provider).catch(e=>alert(e.message)));
-        document.getElementById('btn-offline').addEventListener('click', () => { screens.login.style.display='none'; screens.start.style.display='flex'; });
-        document.getElementById('btn-logout').addEventListener('click', () => signOut(auth).then(()=>window.location.reload()));
+        document.getElementById('btn-offline').addEventListener('click', () => { 
+            showScreen('start');
+        });
+        
+        document.getElementById('btn-logout').addEventListener('click', () => {
+            if(auth) signOut(auth).then(()=>window.location.reload());
+            else window.location.reload();
+        });
+        
         document.getElementById('btn-start').addEventListener('click', startGame);
         document.getElementById('btn-retry').addEventListener('click', startGame);
+        
         document.getElementById('btn-tab-world').addEventListener('click', () => loadLeaderboard('world'));
         document.getElementById('btn-tab-city').addEventListener('click', () => loadLeaderboard('city'));
         document.getElementById('btn-share').addEventListener('click', shareScore);
 
-        // Location Detection
+        // --- DATA & API ---
         async function getLoc() {
             try {
                 let req = await fetch('https://ipapi.co/json/');
                 let res = await req.json();
                 if(res.city) {
                     userLocation = { city: res.city, country: res.country_name };
-                    els.locBadge.style.display = 'block';
-                    els.locBadge.innerText = `📍 ${res.city}`;
-                    els.startLoc.innerText = res.city;
-                    els.btnCity.innerText = `${res.city.toUpperCase()} 🏘️`;
+                    const badge = document.getElementById('location-badge');
+                    badge.style.display = 'block';
+                    badge.innerText = `📍 ${res.city}`;
+                    document.getElementById('start-location').innerText = res.city;
+                    document.getElementById('btn-tab-city').innerText = `${res.city.toUpperCase()} 🏘️`;
                 }
-            } catch(e) { console.log("Loc fail"); }
+            } catch(e) { console.log("Loc fail, using default."); }
         }
         getLoc();
 
-        // Auth State
-        if(auth) {
-            onAuthStateChanged(auth, (user) => {
-                screens.loading.style.display = 'none'; // Hide loading
-                if(user) {
-                    currentUser = user;
-                    screens.login.style.display = 'none';
-                    screens.start.style.display = 'flex';
-                    document.getElementById('user-info').style.display = 'flex';
-                    document.getElementById('user-name').innerText = user.displayName.split(' ')[0];
-                    document.getElementById('user-photo').src = user.photoURL;
-                } else {
-                    currentUser = null;
-                    screens.login.style.display = 'flex';
-                    document.getElementById('user-info').style.display = 'none';
-                }
-            });
-        } else {
-            screens.loading.style.display = 'none';
-            screens.login.style.display = 'flex';
-        }
-
-        // Save Score
         async function saveScore(s) {
-            if(!currentUser || !db) return;
-            // Anti-cheat simple logic
+            if(!currentUser || !db || isOfflineMode) return;
+            // Anti-cheat simple check
             let dur = (Date.now() - state.startTime)/1000;
-            if(s > 5 && dur < s*0.8) return; 
+            if(s > 10 && dur < s*0.5) return; 
 
             try {
                 const ref = doc(db, "scores", currentUser.uid);
@@ -468,49 +567,60 @@
                 
                 if(s > old || (snap.exists() && !snap.data().city)) {
                     await setDoc(ref, {
-                        name: currentUser.displayName, photo: currentUser.photoURL,
-                        score: Math.max(s, old), timestamp: Date.now(),
-                        city: userLocation.city, country: userLocation.country
+                        name: currentUser.displayName || "Anonymous",
+                        photo: currentUser.photoURL,
+                        score: Math.max(s, old),
+                        timestamp: Date.now(),
+                        city: userLocation.city,
+                        country: userLocation.country
                     }, { merge: true });
                 }
-            } catch(e) { console.error(e); }
+            } catch(e) { console.error("Save failed", e); }
         }
 
-        // Load Leaderboard
         async function loadLeaderboard(type) {
-            if(!db) return;
-            currentTab = type;
-            els.list.innerHTML = "Loading...";
+            if(!db || isOfflineMode) {
+                document.getElementById('leaderboard-list').innerHTML = "<div style='text-align:center;padding:10px'>Offline Mode</div>";
+                return;
+            }
             
-            // UI Toggle
-            els.btnWorld.className = type=='world' ? 'btn btn-small btn-active' : 'btn btn-small';
-            els.btnCity.className = type=='city' ? 'btn btn-small btn-active' : 'btn btn-small';
+            const list = document.getElementById('leaderboard-list');
+            const title = document.getElementById('leaderboard-title');
+            
+            // Toggle UI Buttons
+            document.getElementById('btn-tab-world').className = type=='world' ? 'btn btn-small btn-active' : 'btn btn-small';
+            document.getElementById('btn-tab-city').className = type=='city' ? 'btn btn-small btn-active' : 'btn btn-small';
+            
+            list.innerHTML = "Loading...";
 
             try {
                 let q;
                 const ref = collection(db, "scores");
                 if(type === 'world') {
-                    els.title.innerText = "TOP WORLD 🌍";
+                    title.innerText = "TOP WORLD 🌍";
                     q = query(ref, orderBy("score", "desc"), limit(10));
                 } else {
-                    els.title.innerText = `TOP ${userLocation.city.toUpperCase()} 🏘️`;
+                    title.innerText = `TOP ${userLocation.city.toUpperCase()} 🏘️`;
+                    // Note: Ini butuh Composite Index di Firebase Console agar jalan
                     q = query(ref, where("city", "==", userLocation.city), orderBy("score", "desc"), limit(10));
                 }
 
                 const snap = await getDocs(q);
-                if(snap.empty) { els.list.innerHTML = "<div style='text-align:center; padding:10px;'>No data.</div>"; return; }
+                if(snap.empty) { list.innerHTML = "<div style='text-align:center; padding:10px;'>Belum ada data skor.</div>"; return; }
 
                 let html = ""; let i = 1;
                 snap.forEach(d => {
                     let data = d.data();
                     let isMe = currentUser && d.id === currentUser.uid;
+                    let safeName = data.name ? data.name.substring(0, 12) : "Anon";
                     let tag = (type==='world' && data.city) ? `<span class="city-tag">📍 ${data.city}</span>` : '';
+                    
                     html += `
                         <div class="rank-row ${isMe ? 'rank-me' : ''}">
                             <div style="display:flex;align-items:center;gap:8px;width:75%;">
                                 <span style="font-weight:bold; width:20px;">#${i}</span>
                                 <div style="display:flex;flex-direction:column;overflow:hidden;">
-                                    <span>${data.name.substring(0, 12)}</span>
+                                    <span>${safeName}</span>
                                     ${tag}
                                 </div>
                             </div>
@@ -518,18 +628,18 @@
                         </div>`;
                     i++;
                 });
-                els.list.innerHTML = html;
+                list.innerHTML = html;
             } catch(e) {
-                if(e.message.includes("index")) els.list.innerHTML = "<div style='color:red;'>Index Required (Check Console)</div>";
-                else els.list.innerHTML = "Error loading data.";
+                if(e.message.includes("index")) list.innerHTML = "<div style='color:red;font-size:0.6rem'>Admin perlu buat Index di Firebase Console</div>";
+                else list.innerHTML = "Gagal memuat data.";
+                console.error(e);
             }
         }
 
-        // Share
         async function shareScore() {
             const data = {
                 title: 'Flappy Bird',
-                text: `Skor saya: ${state.score} di Flappy Bird Regional!`,
+                text: `Saya dapat skor ${state.score} di Flappy Bird! Coba kalahkan saya.`,
                 url: window.location.href
             };
             if(navigator.share) {
@@ -539,10 +649,12 @@
             }
         }
 
-        // Init Background
+        // Start
+        resize();
         initBg();
         drawBg(0);
         ground.draw();
+        initFirebase(); // Initialize last
 
     </script>
 </body>
