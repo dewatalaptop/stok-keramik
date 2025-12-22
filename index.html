@@ -3,242 +3,362 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manajemen Stok Keramik</title>
+    <title>Tetris GitHub</title>
     <style>
-        /* Modern CSS Reset */
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Poppins', sans-serif; background-color: #f4f7f6; color: #333; line-height: 1.6; }
-        .container { max-width: 1200px; margin: 20px auto; padding: 20px; }
-        header h1 { text-align: center; color: #2c3e50; margin-bottom: 30px; font-weight: 600; }
-        .form-card { background: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05); margin-bottom: 40px; }
-        .form-card h2 { margin-bottom: 20px; font-weight: 500; color: #34495e; border-left: 4px solid #3498db; padding-left: 10px; }
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; align-items: end; }
-        .input-group { display: flex; flex-direction: column; }
-        .input-group label { margin-bottom: 8px; font-size: 0.9em; color: #555; font-weight: 500; }
-        .input-group input { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1em; }
-        button { padding: 12px 20px; border: none; border-radius: 8px; background-color: #3498db; color: white; font-size: 1em; font-weight: 500; cursor: pointer; transition: background-color 0.3s; width: 100%; height: 48px; }
-        button:hover { background-color: #2980b9; }
-        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
-        button.danger { background-color: #e74c3c; }
-        button.danger:hover { background-color: #c0392b; }
-        button.success { background-color: #2ecc71; }
-        button.success:hover { background-color: #27ae60; }
-        #productList { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
-        .product-card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05); }
-        .product-card img { width: 100%; height: 200px; object-fit: cover; }
-        .product-info { padding: 20px; }
-        .product-info h3 { margin-bottom: 10px; }
-        .stock-display { font-size: 1.5em; font-weight: 600; color: #3498db; margin-bottom: 20px; }
-        .stock-display span { font-size: 0.7em; font-weight: 400; color: #7f8c8d; }
-        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: center; }
-        .actions input { width: 100%; }
-        .delete-action { margin-top: 15px; }
-        #loading, #empty-state { text-align: center; margin-top: 50px; font-size: 1.2em; color: #7f8c8d; }
+        /* CSS: Tampilan Visual */
+        body {
+            background: #202028;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
 
-        /* --- STYLE BARU UNTUK KOTAK ERROR --- */
-        #error-reporter {
-            display: none; /* Sembunyi secara default */
-            margin-top: 40px;
-            padding: 20px;
-            background-color: #fff1f1;
-            border: 2px solid #e74c3c;
-            border-radius: 12px;
-            color: #c0392b;
+        #game-container {
+            position: relative;
+            border: 2px solid #333;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
-        #error-reporter h2 {
-            color: #c0392b;
-            margin-bottom: 15px;
+
+        canvas {
+            display: block;
+            background-color: #000;
         }
-        #error-details {
-            background-color: #ffffff;
+
+        .ui-panel {
+            display: flex;
+            justify-content: space-between;
+            width: 240px;
+            margin-bottom: 10px;
+        }
+
+        .score-box {
+            font-size: 1.2rem;
+        }
+
+        /* Kontrol untuk Mobile (Touchscreen) */
+        #mobile-controls {
+            display: none; /* Disembunyikan di Desktop */
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        .btn {
+            background: #444;
+            border: none;
+            color: white;
             padding: 15px;
-            border-radius: 8px;
-            border: 1px dashed #e74c3c;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 0.9em;
-            white-space: pre-wrap; /* Agar teks bisa di-copy dengan baik */
-            word-wrap: break-word;
-            color: #2c3e50;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            width: 50px;
+            height: 50px;
+            touch-action: manipulation; /* Mencegah zoom saat tap cepat */
+            cursor: pointer;
+        }
+
+        .btn:active {
+            background: #666;
+        }
+
+        /* Tampilkan tombol hanya jika layar kecil */
+        @media (max-width: 600px) {
+            #mobile-controls {
+                display: flex;
+            }
         }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <div class="container">
-        <header>
-            <h1>Manajemen Stok Keramik</h1>
-        </header>
-        <div class="form-card">
-            <h2>Tambah Produk Baru</h2>
-            <form id="addProductForm" class="form-grid">
-                <div class="input-group"><label for="productName">Nama Produk</label><input type="text" id="productName" placeholder="Contoh: Vas Bunga" required></div>
-                <div class="input-group"><label for="productStock">Stok Awal</label><input type="number" id="productStock" placeholder="50" min="0" required></div>
-                <div class="input-group"><label for="productImage">Foto Produk</label><input type="file" id="productImage" accept="image/*" required></div>
-                <button type="submit">Tambah Produk</button>
-            </form>
-        </div>
-        <div id="loading">Memuat data produk...</div>
-        <div id="empty-state" style="display: none;">Belum ada produk.</div>
-        <div id="productList"></div>
-
-        <div id="error-reporter">
-            <h2>Laporan Error Detail</h2>
-            <p>Telah terjadi error. Mohon salin seluruh teks di dalam kotak di bawah ini dan kirimkan untuk dianalisis:</p>
-            <pre id="error-details"></pre>
-        </div>
+    <div class="ui-panel">
+        <div class="score-box">Skor: <span id="score">0</span></div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <div id="game-container">
+        <canvas id="tetris" width="240" height="400"></canvas>
+    </div>
+
+    <div id="mobile-controls">
+        <button class="btn" onclick="playerRotate(-1)">↻</button>
+        <button class="btn" onclick="playerMove(-1)">←</button>
+        <button class="btn" onclick="playerMove(1)">→</button>
+        <button class="btn" onclick="playerDrop()">↓</button>
+    </div>
 
     <script>
-        // --- KONFIGURASI FIREBASE ANDA ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyCkzNNhJrtOwOKLK9mKfjMGk6rAj0D_jqM", // Ganti dengan milik Anda
-            authDomain: "stok-keramik-ds.firebaseapp.com",
-            projectId: "stok-keramik-ds",
-            storageBucket: "stok-keramik-ds.appspot.com",
-            messagingSenderId: "1031003194375",
-            appId: "1:1031003194375:web:b16f303511d71524ab16a2"
-        };
+        // JAVASCRIPT: Logika Game
+        const canvas = document.getElementById('tetris');
+        const context = canvas.getContext('2d');
 
-        // Inisialisasi Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const storage = firebase.storage();
+        context.scale(20, 20); // Skala grid (setiap blok 20px)
 
-        // Referensi Elemen DOM
-        const addProductForm = document.getElementById('addProductForm');
-        const productListDiv = document.getElementById('productList');
-        const loadingDiv = document.getElementById('loading');
-        const emptyStateDiv = document.getElementById('empty-state');
-        const errorReporterDiv = document.getElementById('error-reporter');
-        const errorDetailsPre = document.getElementById('error-details');
+        // Fungsi untuk membersihkan baris yang penuh
+        function arenaSweep() {
+            let rowCount = 1;
+            outer: for (let y = arena.length - 1; y > 0; --y) {
+                for (let x = 0; x < arena[y].length; ++x) {
+                    if (arena[y][x] === 0) {
+                        continue outer;
+                    }
+                }
 
-        // === FUNGSI BARU UNTUK MENAMPILKAN ERROR DETAIL ===
-        const displayErrorDetails = (error) => {
-            console.error(error);
-            const errorString = JSON.stringify(error, Object.getOwnPropertyNames(error), 2);
-            errorDetailsPre.textContent = errorString;
-            errorReporterDiv.style.display = 'block';
-            alert('Terjadi Error! Silakan lihat laporan detail di bagian bawah halaman.');
-        };
-        const hideErrorDetails = () => {
-            errorReporterDiv.style.display = 'none';
-        };
+                const row = arena.splice(y, 1)[0].fill(0);
+                arena.unshift(row);
+                ++y;
 
-        // Fungsi Render Produk
-        const renderProduct = (doc) => {
-            const data = doc.data();
-            const id = doc.id;
-            const card = document.createElement('div');
-            card.className = 'product-card';
-            card.innerHTML = `
-                <img src="${data.imageUrl}" alt="${data.name}">
-                <div class="product-info">
-                    <h3>${data.name}</h3>
-                    <div class="stock-display">${data.stock} <span>unit</span></div>
-                    <div class="actions">
-                        <input type="number" class="stock-update-input" min="1" placeholder="Jumlah">
-                        <button class="update-stock-btn success" data-action="add">Tambah Stok</button>
-                    </div>
-                     <div class="actions" style="margin-top: 10px;">
-                        <input type="number" class="stock-update-input" min="1" placeholder="Jumlah">
-                        <button class="update-stock-btn danger" data-action="sell">Stok Terjual</button>
-                    </div>
-                    <div class="delete-action">
-                        <button class="delete-btn danger">Hapus Produk</button>
-                    </div>
-                </div>`;
-            productListDiv.appendChild(card);
-            card.querySelector('.delete-btn').addEventListener('click', () => deleteProduct(id, data.storagePath));
-            card.querySelectorAll('.update-stock-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const action = e.target.dataset.action;
-                    const input = e.target.closest('.actions').querySelector('.stock-update-input');
-                    const value = parseInt(input.value);
-                    if (!isNaN(value) && value > 0) {
-                        const change = action === 'add' ? value : -value;
-                        updateStock(id, data.stock, change);
-                        input.value = '';
-                    } else { alert('Masukkan jumlah yang valid.'); }
+                player.score += rowCount * 10;
+                rowCount *= 2;
+            }
+        }
+
+        // Cek tabrakan
+        function collide(arena, player) {
+            const [m, o] = [player.matrix, player.pos];
+            for (let y = 0; y < m.length; ++y) {
+                for (let x = 0; x < m[y].length; ++x) {
+                    if (m[y][x] !== 0 &&
+                       (arena[y + o.y] &&
+                        arena[y + o.y][x + o.x]) !== 0) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        // Membuat matriks grid kosong
+        function createMatrix(w, h) {
+            const matrix = [];
+            while (h--) {
+                matrix.push(new Array(w).fill(0));
+            }
+            return matrix;
+        }
+
+        // Membuat bentuk potongan Tetris (Tetromino)
+        function createPiece(type) {
+            if (type === 'I') {
+                return [
+                    [0, 1, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 1, 0, 0],
+                    [0, 1, 0, 0],
+                ];
+            } else if (type === 'L') {
+                return [
+                    [0, 2, 0],
+                    [0, 2, 0],
+                    [0, 2, 2],
+                ];
+            } else if (type === 'J') {
+                return [
+                    [0, 3, 0],
+                    [0, 3, 0],
+                    [3, 3, 0],
+                ];
+            } else if (type === 'O') {
+                return [
+                    [4, 4],
+                    [4, 4],
+                ];
+            } else if (type === 'Z') {
+                return [
+                    [5, 5, 0],
+                    [0, 5, 5],
+                    [0, 0, 0],
+                ];
+            } else if (type === 'S') {
+                return [
+                    [0, 6, 6],
+                    [6, 6, 0],
+                    [0, 0, 0],
+                ];
+            } else if (type === 'T') {
+                return [
+                    [0, 7, 0],
+                    [7, 7, 7],
+                    [0, 0, 0],
+                ];
+            }
+        }
+
+        // Menggambar elemen ke canvas
+        function draw() {
+            context.fillStyle = '#000';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+
+            drawMatrix(arena, {x: 0, y: 0});
+            drawMatrix(player.matrix, player.pos);
+        }
+
+        // Menggambar matriks blok
+        function drawMatrix(matrix, offset) {
+            matrix.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) {
+                        context.fillStyle = colors[value];
+                        context.fillRect(x + offset.x,
+                                         y + offset.y,
+                                         1, 1);
+                        // Efek border blok agar terlihat terpisah
+                        context.lineWidth = 0.05;
+                        context.strokeStyle = 'white';
+                        context.strokeRect(x + offset.x, y + offset.y, 1, 1);
+                    }
                 });
             });
-        };
+        }
 
-        // Listener Real-time
-        db.collection('products').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
-            loadingDiv.style.display = 'none';
-            hideErrorDetails();
-            productListDiv.innerHTML = '';
-            if (snapshot.empty) {
-                emptyStateDiv.style.display = 'block';
-            } else {
-                emptyStateDiv.style.display = 'none';
-                snapshot.docs.forEach(renderProduct);
-            }
-        }, err => {
-            displayErrorDetails(err);
-        });
-
-        // Tambah Produk
-        addProductForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const submitButton = addProductForm.querySelector('button');
-            const name = addProductForm.productName.value;
-            const stock = parseInt(addProductForm.productStock.value);
-            const imageFile = addProductForm.productImage.files[0];
-            if (!name || isNaN(stock) || !imageFile) { alert('Harap isi semua kolom.'); return; }
-            submitButton.disabled = true;
-            submitButton.textContent = 'Mengunggah...';
-            try {
-                const storagePath = `product_images/${Date.now()}_${imageFile.name}`;
-                const storageRef = storage.ref(storagePath);
-                const uploadTask = await storageRef.put(imageFile);
-                const imageUrl = await uploadTask.ref.getDownloadURL();
-                await db.collection('products').add({
-                    name, stock, imageUrl, storagePath,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        // Menyatukan potongan dengan arena saat mendarat
+        function merge(arena, player) {
+            player.matrix.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) {
+                        arena[y + player.pos.y][x + player.pos.x] = value;
+                    }
                 });
-                addProductForm.reset();
-                alert('Produk berhasil ditambahkan!');
-            } catch (error) {
-                displayErrorDetails(error);
-            } finally {
-                submitButton.disabled = false;
-                submitButton.textContent = 'Tambah Produk';
-            }
-        });
+            });
+        }
 
-        // Update Stok
-        const updateStock = async (id, currentStock, change) => {
-            const newStock = currentStock + change;
-            if (newStock < 0) { alert('Stok tidak boleh minus!'); return; }
-            try {
-                await db.collection('products').doc(id).update({
-                    stock: firebase.firestore.FieldValue.increment(change)
-                });
-            } catch (error) {
-                displayErrorDetails(error);
-            }
-        };
-
-        // Hapus Produk
-        const deleteProduct = async (id, storagePath) => {
-            if (!confirm('Apakah Anda yakin ingin menghapus produk ini?')) return;
-            try {
-                await db.collection('products').doc(id).delete();
-                if (storagePath) {
-                    const storageRef = storage.ref(storagePath);
-                    await storageRef.delete();
+        // Fungsi rotasi matriks
+        function rotate(matrix, dir) {
+            for (let y = 0; y < matrix.length; ++y) {
+                for (let x = 0; x < y; ++x) {
+                    [
+                        matrix[x][y],
+                        matrix[y][x],
+                    ] = [
+                        matrix[y][x],
+                        matrix[x][y],
+                    ];
                 }
-                alert('Produk berhasil dihapus.');
-            } catch (error) {
-                displayErrorDetails(error);
             }
+            if (dir > 0) {
+                matrix.forEach(row => row.reverse());
+            } else {
+                matrix.reverse();
+            }
+        }
+
+        // Menjatuhkan potongan (Gravitasi)
+        function playerDrop() {
+            player.pos.y++;
+            if (collide(arena, player)) {
+                player.pos.y--;
+                merge(arena, player);
+                playerReset();
+                arenaSweep();
+                updateScore();
+            }
+            dropCounter = 0;
+        }
+
+        // Menggerakkan potongan kiri/kanan
+        function playerMove(offset) {
+            player.pos.x += offset;
+            if (collide(arena, player)) {
+                player.pos.x -= offset;
+            }
+        }
+
+        // Mengatur ulang potongan (Spawn baru)
+        function playerReset() {
+            const pieces = 'TJLOSZI';
+            player.matrix = createPiece(pieces[pieces.length * Math.random() | 0]);
+            player.pos.y = 0;
+            player.pos.x = (arena[0].length / 2 | 0) -
+                           (player.matrix[0].length / 2 | 0);
+            
+            // Game Over Check
+            if (collide(arena, player)) {
+                arena.forEach(row => row.fill(0));
+                player.score = 0;
+                updateScore();
+            }
+        }
+
+        // Fungsi rotasi player dengan pencegahan tabrakan tembok
+        function playerRotate(dir) {
+            const pos = player.pos.x;
+            let offset = 1;
+            rotate(player.matrix, dir);
+            while (collide(arena, player)) {
+                player.pos.x += offset;
+                offset = -(offset + (offset > 0 ? 1 : -1));
+                if (offset > player.matrix[0].length) {
+                    rotate(player.matrix, -dir);
+                    player.pos.x = pos;
+                    return;
+                }
+            }
+        }
+
+        let dropCounter = 0;
+        let dropInterval = 1000;
+        let lastTime = 0;
+
+        // Loop utama animasi game
+        function update(time = 0) {
+            const deltaTime = time - lastTime;
+            lastTime = time;
+
+            dropCounter += deltaTime;
+            if (dropCounter > dropInterval) {
+                playerDrop();
+            }
+
+            draw();
+            requestAnimationFrame(update);
+        }
+
+        function updateScore() {
+            document.getElementById('score').innerText = player.score;
+        }
+
+        // Palet warna potongan
+        const colors = [
+            null,
+            '#FF0D72', // T shape
+            '#0DC2FF', // Cyan
+            '#0DFF72', // Green
+            '#F538FF', // Purple
+            '#FF8E0D', // Orange
+            '#FFE138', // Yellow
+            '#3877FF', // Blue
+        ];
+
+        const arena = createMatrix(12, 20); // Lebar 12, Tinggi 20
+
+        const player = {
+            pos: {x: 0, y: 0},
+            matrix: null,
+            score: 0,
         };
+
+        // Kontrol Keyboard
+        document.addEventListener('keydown', event => {
+            if (event.keyCode === 37) { // Panah Kiri
+                playerMove(-1);
+            } else if (event.keyCode === 39) { // Panah Kanan
+                playerMove(1);
+            } else if (event.keyCode === 40) { // Panah Bawah
+                playerDrop();
+            } else if (event.keyCode === 81) { // Q (Rotasi kiri)
+                playerRotate(-1);
+            } else if (event.keyCode === 87 || event.keyCode === 38) { // W / Panah Atas (Rotasi kanan)
+                playerRotate(1);
+            }
+        });
+
+        // Inisialisasi Game
+        playerReset();
+        updateScore();
+        update();
     </script>
 </body>
 </html>
