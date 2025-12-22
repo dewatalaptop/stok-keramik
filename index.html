@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flappy Bird Regional</title>
+    <title>Flappy Bird Ultimate</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -11,7 +11,7 @@
             margin: 0; padding: 0;
             display: flex; justify-content: center; align-items: center;
             height: 100vh;
-            background-color: #333;
+            background-color: #222;
             font-family: 'Press Start 2P', cursive;
             overflow: hidden;
             touch-action: none; 
@@ -19,10 +19,11 @@
 
         #game-container {
             position: relative;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
             width: 100%; max-width: 400px; 
             height: 100%; max-height: 600px;
-            background: #70C5CE;
+            /* Background warna diatur via JS sekarang */
+            background: #70C5CE; 
             overflow: hidden;
         }
 
@@ -56,6 +57,7 @@
         }
         .btn:active { transform: translateY(4px); box-shadow: 0 0 0 #994000; }
         .btn-google { background: #4285F4; box-shadow: 0 4px 0 #0d47a1; }
+        .btn-share { background: #25D366; box-shadow: 0 4px 0 #128C7E; } /* Warna WA */
         .btn-small { width: auto; display: inline-block; font-size: 0.6rem; padding: 8px; margin: 5px 2px; }
         .btn-active { background: #73BF2E; box-shadow: 0 4px 0 #4c8519; }
 
@@ -123,19 +125,20 @@
 
         <div id="start-screen" class="screen">
             <h1>READY?</h1>
-            <div style="font-size: 0.6rem; color: #fff; margin-bottom: 10px;">Playing as: <span id="start-location">Unknown Location</span></div>
+            <div style="font-size: 0.6rem; color: #fff; margin-bottom: 10px;">Location: <span id="start-location">Unknown</span></div>
             <button class="btn" onclick="startGame()">START GAME</button>
         </div>
 
         <div id="game-over-screen" class="screen">
             <h1 style="font-size:1.2rem; margin-bottom:5px;">GAME OVER</h1>
             
-            <div class="leaderboard-box" style="padding: 5px;">
+            <div class="leaderboard-box" style="padding: 5px; background: #E8D6A5;">
                 <div style="text-align: center; font-size: 0.6rem;">YOUR SCORE</div>
-                <div id="final-score" style="font-size: 1.5rem; text-align: center; color:#E86101;">0</div>
+                <div id="final-score" style="font-size: 1.8rem; text-align: center; color:#E86101; margin: 5px 0;">0</div>
+                <button class="btn btn-share" onclick="shareScore()" style="margin-top: 5px; padding: 8px;">SHARE SCORE 📢</button>
             </div>
 
-            <div style="display: flex; justify-content: center; gap: 5px; margin-bottom: 5px;">
+            <div style="display: flex; justify-content: center; gap: 5px; margin-bottom: 5px; margin-top: 15px;">
                 <button id="btn-tab-world" class="btn btn-small btn-active" onclick="switchTab('world')">WORLD 🌍</button>
                 <button id="btn-tab-city" class="btn btn-small" onclick="switchTab('city')">MY CITY 🏘️</button>
             </div>
@@ -154,15 +157,15 @@
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, getDoc, query, orderBy, limit, getDocs, where } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-        // --- 1. SETUP FIREBASE ---
+        // --- 1. SETUP FIREBASE (ISI KEMBALI CONFIG ANDA DI SINI) ---
         const firebaseConfig = {
-  apiKey: "AIzaSyDH6cBMyBCNdzG_tdJNs28AZZIm8HnO8l4",
-  authDomain: "flytap-ca3ee.firebaseapp.com",
-  projectId: "flytap-ca3ee",
-  storageBucket: "flytap-ca3ee.firebasestorage.app",
-  messagingSenderId: "690738199480",
-  appId: "1:690738199480:web:b1b442690440db79016d4d"
-};
+            apiKey: "GANTI_DENGAN_API_KEY_ANDA",
+            authDomain: "GANTI_DENGAN_PROJECT_ID.firebaseapp.com",
+            projectId: "GANTI_DENGAN_PROJECT_ID",
+            storageBucket: "GANTI_DENGAN_PROJECT_ID.appspot.com",
+            messagingSenderId: "GANTI_DENGAN_SENDER_ID",
+            appId: "GANTI_DENGAN_APP_ID"
+        };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -171,36 +174,27 @@
 
         let currentUser = null;
         let userLocation = { city: "Unknown", country: "Unknown" };
-        let currentTab = 'world'; // 'world' or 'city'
+        let currentTab = 'world';
 
-        // --- 2. DETEKSI LOKASI USER ---
+        // --- DETEKSI LOKASI ---
         async function detectLocation() {
             try {
-                // Menggunakan API gratis ipapi.co (HTTPS supported)
                 const response = await fetch('https://ipapi.co/json/');
                 const data = await response.json();
                 if (data.city) {
-                    userLocation = {
-                        city: data.city,
-                        country: data.country_name
-                    };
+                    userLocation = { city: data.city, country: data.country_name };
                     document.getElementById('location-badge').style.display = 'block';
-                    document.getElementById('location-badge').innerText = `📍 ${userLocation.city}, ${userLocation.country}`;
+                    document.getElementById('location-badge').innerText = `📍 ${userLocation.city}`;
                     document.getElementById('start-location').innerText = userLocation.city;
                     document.getElementById('btn-tab-city').innerText = `${userLocation.city.toUpperCase()} 🏘️`;
                 }
-            } catch (error) {
-                console.log("Loc error:", error);
-            }
+            } catch (e) { console.log("Loc error"); }
         }
-
-        // Jalankan deteksi saat load
         detectLocation();
 
-        // --- 3. LOGIC AUTH ---
+        // --- AUTH LOGIC ---
         window.loginGoogle = () => signInWithPopup(auth, provider).catch(e => alert(e.message));
         window.logout = () => signOut(auth).then(() => window.location.reload());
-        
         window.playOffline = () => {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('start-screen').style.display = 'block';
@@ -221,53 +215,33 @@
             }
         });
 
-        // --- 4. SAVE SCORE WITH LOCATION ---
+        // --- SAVE SCORE ---
         async function saveScoreToFirebase(score, startTime) {
             if (!currentUser) return;
-            
-            // Validasi Waktu (Anti-Cheat)
             const duration = (Date.now() - startTime) / 1000;
-            if (score > 5 && duration < score * 1.0) {
-                console.warn("Cheat detected"); return;
-            }
+            if (score > 5 && duration < score * 0.8) { console.warn("Cheat detected"); return; }
 
             try {
                 const userRef = doc(db, "scores", currentUser.uid);
                 const docSnap = await getDoc(userRef);
-                
-                // Cek highscore lama
                 let oldScore = docSnap.exists() ? docSnap.data().score : 0;
                 
-                // Update jika skor baru lebih tinggi ATAU data lokasi belum ada
                 if (score > oldScore || (docSnap.exists() && !docSnap.data().city)) {
-                    // Kita simpan skor (jika lebih tinggi) dan update lokasi terkini
-                    const scoreToSave = Math.max(score, oldScore);
-                    
                     await setDoc(userRef, {
-                        name: currentUser.displayName,
-                        photo: currentUser.photoURL,
-                        score: scoreToSave,
-                        timestamp: Date.now(),
-                        city: userLocation.city,      // Field Baru
-                        country: userLocation.country // Field Baru
-                    }, { merge: true }); // Merge: agar tidak menimpa field lain jika ada
+                        name: currentUser.displayName, photo: currentUser.photoURL,
+                        score: Math.max(score, oldScore), timestamp: Date.now(),
+                        city: userLocation.city, country: userLocation.country
+                    }, { merge: true });
                 }
-                
-                refreshLeaderboard(); // Load leaderboard setelah simpan
-
-            } catch (e) {
-                console.error("Save error:", e);
-            }
+                refreshLeaderboard();
+            } catch (e) { console.error("Save error:", e); }
         }
 
-        // --- 5. LOAD LEADERBOARD (GLOBAL & LOCAL) ---
+        // --- LEADERBOARD ---
         window.switchTab = (tab) => {
             currentTab = tab;
-            
-            // Update UI Tombol
             document.getElementById('btn-tab-world').className = tab === 'world' ? 'btn btn-small btn-active' : 'btn btn-small';
             document.getElementById('btn-tab-city').className = tab === 'city' ? 'btn btn-small btn-active' : 'btn btn-small';
-            
             refreshLeaderboard();
         };
 
@@ -276,66 +250,34 @@
             const titleEl = document.getElementById('leaderboard-title');
             listEl.innerHTML = "Loading...";
             
-            let q;
-            const scoresRef = collection(db, "scores");
-
+            let q; const scoresRef = collection(db, "scores");
             try {
                 if (currentTab === 'world') {
                     titleEl.innerText = "TOP WORLD 🌍";
-                    // Query Global
                     q = query(scoresRef, orderBy("score", "desc"), limit(10));
                 } else {
                     titleEl.innerText = `TOP ${userLocation.city.toUpperCase()} 🏘️`;
-                    // Query Lokal (Perlu Composite Index di Firebase)
-                    // Mencari user yang kotanya sama, lalu urutkan score
                     q = query(scoresRef, where("city", "==", userLocation.city), orderBy("score", "desc"), limit(10));
                 }
-
                 const querySnapshot = await getDocs(q);
-                
-                if (querySnapshot.empty) {
-                    listEl.innerHTML = "<div style='text-align:center; padding:10px;'>Belum ada data di sini.</div>";
-                    return;
-                }
+                if (querySnapshot.empty) { listEl.innerHTML = "<div style='text-align:center; padding:10px;'>No data yet.</div>"; return; }
 
-                let html = "";
-                let rank = 1;
+                let html = ""; let rank = 1;
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     const isMe = currentUser && doc.id === currentUser.uid;
-                    // Tampilkan Kota jika di tab World, sembunyikan jika di tab City
-                    const locationTag = currentTab === 'world' && data.city ? `<span class="city-tag">📍 ${data.city}</span>` : '';
-                    
-                    html += `
-                        <div class="rank-row ${isMe ? 'rank-me' : ''}">
-                            <div style="display:flex; align-items:center; gap:5px; width:70%;">
-                                <span style="width:20px;">#${rank}</span>
-                                <div style="display:flex; flex-direction:column; overflow:hidden;">
-                                    <span style="white-space:nowrap;">${data.name.substring(0, 12)}</span>
-                                    ${locationTag}
-                                </div>
-                            </div>
-                            <span>${data.score}</span>
-                        </div>
-                    `;
+                    const locTag = currentTab === 'world' && data.city ? `<span class="city-tag">📍 ${data.city}</span>` : '';
+                    html += `<div class="rank-row ${isMe ? 'rank-me' : ''}"><div style="display:flex;align-items:center;gap:5px;width:70%;"><span style="width:20px;">#${rank}</span><div style="display:flex;flex-direction:column;overflow:hidden;"><span style="white-space:nowrap;">${data.name.substring(0, 12)}</span>${locTag}</div></div><span>${data.score}</span></div>`;
                     rank++;
                 });
                 listEl.innerHTML = html;
-
             } catch (error) {
-                console.error("Leaderboard Error:", error);
-                // Menangkap error Index Firestore
-                if (error.message.includes("indexes")) {
-                    listEl.innerHTML = "<div style='color:red; font-size:0.5rem;'>Admin perlu membuat Index di Firebase Console.<br>Buka console browser (F12) untuk linknya.</div>";
-                } else {
-                    listEl.innerHTML = "Gagal memuat data.";
-                }
+                if (error.message.includes("indexes")) listEl.innerHTML = "<div style='color:red;font-size:0.5rem;'>Need Index defined in Firebase Console.</div>";
+                else listEl.innerHTML = "Failed to load.";
             }
         }
 
-        window.submitGameScore = (score, startTime) => {
-            saveScoreToFirebase(score, startTime);
-        };
+        window.submitGameScore = (score, startTime) => { saveScoreToFirebase(score, startTime); };
     </script>
 
     <script>
@@ -345,6 +287,7 @@
         const finalScoreEl = document.getElementById('final-score');
         const startScreen = document.getElementById('start-screen');
         const gameOverScreen = document.getElementById('game-over-screen');
+        const gameContainer = document.getElementById('game-container');
 
         function resize() {
             canvas.width = canvas.parentElement.clientWidth;
@@ -354,22 +297,80 @@
         resize();
 
         const CONFIG = {
-            gravity: 0.45, jumpStrength: 7.5, pipeGap: 105, pipeSpeed: 2.5, pipeSpawnRate: 110 
+            gravity: 0.45, jumpStrength: 7.5, pipeGap: 110, pipeSpeed: 2.5, pipeSpawnRate: 110 
         };
 
         let frames = 0, score = 0, isGameRunning = false, gameStartTime = 0;
 
+        // --- DAY/NIGHT CYCLE & BACKGROUND ---
+        const bgColors = {
+            daySky: [112, 197, 206], nightSky: [20, 24, 82],
+            dayMtn: [86, 161, 171], nightMtn: [15, 18, 60],
+            dayCloud: [255, 255, 255], nightCloud: [80, 80, 120]
+        };
+
+        function lerpColor(a, b, amount) {
+            const r = a[0] + amount * (b[0] - a[0]);
+            const g = a[1] + amount * (b[1] - a[1]);
+            const b = a[2] + amount * (b[2] - a[2]);
+            return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+        }
+
+        const clouds = [], mountains = [];
+        function initBackground() {
+            for(let i=0; i<5; i++) clouds.push({x: Math.random()*canvas.width, y: Math.random()*canvas.height/2, speed: 0.5 + Math.random()*0.5, size: 20+Math.random()*30});
+            for(let i=0; i<4; i++) mountains.push({x: i*(canvas.width/3), y: canvas.height-150, w: canvas.width/3 + 20, h: 100 + Math.random()*100});
+        }
+        initBackground();
+
+        function drawBackground(cyclePos) {
+            // 1. Sky Color Interpolation
+            const skyColor = lerpColor(bgColors.daySky, bgColors.nightSky, cyclePos);
+            const mtnColor = lerpColor(bgColors.dayMtn, bgColors.nightMtn, cyclePos);
+            const cloudColor = lerpColor(bgColors.dayCloud, bgColors.nightCloud, cyclePos);
+            gameContainer.style.background = skyColor;
+            ctx.fillStyle = skyColor; ctx.fillRect(0,0,canvas.width,canvas.height);
+
+            // 2. Clouds (Parallax Slowest)
+            ctx.fillStyle = cloudColor;
+            clouds.forEach(c => {
+                ctx.beginPath(); ctx.arc(c.x, c.y, c.size, 0, Math.PI*2); ctx.arc(c.x+c.size*0.7, c.y-c.size*0.2, c.size*0.8, 0, Math.PI*2); ctx.fill();
+                if(isGameRunning) c.x -= c.speed * 0.3; if(c.x+c.size*2 < 0) c.x = canvas.width + c.size;
+            });
+
+            // 3. Mountains (Parallax Slower)
+            ctx.fillStyle = mtnColor;
+            mountains.forEach(m => {
+                ctx.beginPath(); ctx.moveTo(m.x, canvas.height-112); ctx.lineTo(m.x+m.w/2, canvas.height-112-m.h); ctx.lineTo(m.x+m.w, canvas.height-112); ctx.fill();
+                if(isGameRunning) m.x -= CONFIG.pipeSpeed * 0.2; if(m.x+m.w < 0) m.x = canvas.width;
+            });
+        }
+
+        // --- BIRD (Enhanced with Wing Animation) ---
         const bird = {
-            x: 50, y: 150, radius: 14, velocity: 0, rotation: 0,
+            x: 50, y: 150, radius: 14, velocity: 0, rotation: 0, wingState: 0,
             draw: function() {
                 ctx.save(); ctx.translate(this.x, this.y);
                 this.rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (this.velocity * 0.12)));
                 ctx.rotate(this.rotation);
-                ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2); ctx.fillStyle = "#FFD700"; ctx.fill(); ctx.stroke();
-                ctx.beginPath(); ctx.arc(6, -6, 8, 0, Math.PI*2); ctx.fillStyle = "#FFF"; ctx.fill(); ctx.stroke();
-                ctx.beginPath(); ctx.arc(8, -6, 2, 0, Math.PI*2); ctx.fillStyle = "#000"; ctx.fill();
-                ctx.beginPath(); ctx.moveTo(8, 2); ctx.lineTo(20, 8); ctx.lineTo(8, 14); ctx.closePath(); ctx.fillStyle = "#E86101"; ctx.fill(); ctx.stroke();
-                ctx.beginPath(); ctx.ellipse(-6, 4, 8, 5, -0.2, 0, Math.PI*2); ctx.fillStyle = "#FFF"; ctx.fill(); ctx.stroke();
+                
+                // Body
+                ctx.beginPath(); ctx.ellipse(0, 0, 15, 12, 0, 0, Math.PI*2); 
+                ctx.fillStyle = "#FFD700"; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = "#000"; ctx.stroke();
+                // Eye
+                ctx.beginPath(); ctx.arc(8, -5, 7, 0, Math.PI*2); ctx.fillStyle = "#FFF"; ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.arc(10, -5, 2.5, 0, Math.PI*2); ctx.fillStyle = "#000"; ctx.fill();
+                // Beak
+                ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(22, 5); ctx.lineTo(12, 10); ctx.closePath(); ctx.fillStyle = "#E86101"; ctx.fill(); ctx.stroke();
+                
+                // Wing Animation State
+                // Jika velocity negatif (lompat), sayap di bawah. Jika positif (jatuh), sayap di atas.
+                let wingY = this.velocity < 0 ? 5 : -3;
+                
+                // Wing
+                ctx.beginPath(); ctx.ellipse(-5, wingY, 8, 5, -0.2, 0, Math.PI*2); 
+                ctx.fillStyle = "#FFF"; ctx.fill(); ctx.stroke();
+                
                 ctx.restore();
             },
             update: function() {
@@ -380,6 +381,7 @@
             flap: function() { this.velocity = -CONFIG.jumpStrength; }
         };
 
+        // --- PIPES & GROUND (Sama seperti sebelumnya) ---
         const pipes = {
             position: [], w: 52,
             draw: function() {
@@ -417,10 +419,14 @@
                 ctx.beginPath(); ctx.moveTo(0, ty); ctx.lineTo(canvas.width, ty); ctx.strokeStyle = "#543847"; ctx.lineWidth = 3; ctx.stroke();
                 ctx.fillStyle = "#73BF2E"; ctx.fillRect(0, ty, canvas.width, 12);
                 ctx.beginPath(); ctx.moveTo(0, ty+12); ctx.lineTo(canvas.width, ty+12); ctx.strokeStyle = "#558C22"; ctx.lineWidth = 2; ctx.stroke();
+                // Grass details
+                ctx.strokeStyle = "#558C22"; ctx.lineWidth = 1;
+                for(let i=0; i<canvas.width/10; i++) { ctx.beginPath(); ctx.moveTo(this.x%10 + i*10, ty+2); ctx.lineTo(this.x%10 + i*10 + 5, ty+10); ctx.stroke(); }
             },
             update: function() { this.x -= CONFIG.pipeSpeed; }
         };
 
+        // --- GAME CONTROL & SHARE FUNCTION ---
         window.startGame = () => {
             startScreen.style.display = 'none'; gameOverScreen.style.display = 'none';
             isGameRunning = true; bird.y = canvas.height / 2; bird.velocity = 0;
@@ -436,11 +442,34 @@
             scoreEl.innerText = "";
             gameOverScreen.style.display = 'block';
             if (window.submitGameScore) window.submitGameScore(score, gameStartTime);
-            // Default load tab global dulu
             window.switchTab('world');
         }
 
         window.resetGame = () => window.startGame();
+        
+        // FITUR SHARE SCORE (WhatsApp / Native)
+        window.shareScore = async () => {
+            const shareData = {
+                title: 'Flappy Bird Challenge',
+                text: `Saya baru saja mendapatkan skor ${score} di Flappy Bird Regional! Coba kalahkan skor saya! 📍${userLocation.city || 'World'}`,
+                url: window.location.href // Link website Anda saat ini
+            };
+
+            // Cek apakah browser mendukung fitur Share native (HP modern biasanya dukung)
+            if (navigator.share) {
+                try {
+                    await navigator.share(shareData);
+                } catch (err) {
+                    console.log('Share dibatalkan/gagal', err);
+                }
+            } else {
+                // Fallback manual ke WhatsApp Web jika native share tidak didukung
+                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareData.text + ' ' + shareData.url)}`;
+                window.open(whatsappUrl, '_blank');
+            }
+        };
+
+
         function input(e) { if((e.type!=='keydown'||e.code==='Space') && isGameRunning) bird.flap(); }
         window.addEventListener('keydown', input);
         canvas.addEventListener('touchstart', (e)=>{input(e);e.preventDefault()}, {passive:false});
@@ -449,10 +478,20 @@
         function loop() {
             if (!isGameRunning) return;
             ctx.clearRect(0,0,canvas.width,canvas.height);
-            ctx.fillStyle="#A3E4E8"; ctx.fillRect(0,canvas.height-162,canvas.width,50);
-            pipes.update(); pipes.draw(); ground.update(); ground.draw(); bird.update(); bird.draw();
+            
+            // Calculate Day/Night cycle position (0.0 = Noon, 1.0 = Midnight)
+            // Cycle every 3000 frames (~50 seconds)
+            let cyclePos = (Math.sin(frames / 3000 * Math.PI * 2) + 1) / 2; 
+            drawBackground(cyclePos);
+            
+            pipes.update(); pipes.draw(); 
+            ground.update(); ground.draw(); 
+            bird.update(); bird.draw();
             frames++; requestAnimationFrame(loop);
         }
+        
+        // Initial draw before start
+        drawBackground(0); 
         ground.draw();
     </script>
 </body>
