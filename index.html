@@ -3,17 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flappy Bird Ultimate v2</title>
+    <title>Flappy Bird Final Fixed</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-        :root {
-            --primary: #E86101;
-            --secondary: #70C5CE;
-            --bg-ui: #DED895;
-            --border: #543847;
-        }
-
+        /* CSS RESET & LAYOUT */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
             margin: 0; padding: 0;
             display: flex; justify-content: center; align-items: center;
@@ -21,585 +16,533 @@
             background-color: #222;
             font-family: 'Press Start 2P', cursive;
             overflow: hidden;
-            touch-action: none;
-            user-select: none; -webkit-user-select: none;
+            touch-action: none; /* Mencegah scroll/zoom di HP */
+            user-select: none;
         }
 
         #game-container {
             position: relative;
-            box-shadow: 0 0 40px rgba(0,0,0,0.8);
-            width: 100%; max-width: 420px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            width: 100%; max-width: 420px; 
             height: 100%; max-height: 800px;
-            background: var(--secondary);
+            background: #70C5CE; 
             overflow: hidden;
         }
 
         canvas { display: block; width: 100%; height: 100%; }
 
-        /* UI ELEMENTS */
-        #flash-overlay {
-            position: absolute; top:0; left:0; width:100%; height:100%;
-            background: white; opacity: 0; pointer-events: none; z-index: 50;
-            transition: opacity 0.1s ease-out;
-        }
-
+        /* UI LAYERS */
         #ui-layer {
             position: absolute; top: 10%; width: 100%;
             text-align: center; pointer-events: none; z-index: 20;
         }
 
         #score {
-            font-size: 3.5rem; color: white;
+            font-size: 3rem; color: white;
             -webkit-text-stroke: 2px #000;
-            text-shadow: 3px 3px 0 #000;
-            transition: transform 0.1s;
+            text-shadow: 4px 4px 0 #000;
         }
 
         .screen {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 85%; z-index: 30;
-            display: none;
-            flex-direction: column; align-items: center;
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); /* Dim background */
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 30;
+            display: none; /* Hidden by default */
         }
 
+        /* BUTTON STYLES */
         .btn {
-            background: var(--primary); border: 2px solid #fff;
+            background: #E86101; border: 2px solid #fff;
             box-shadow: 0 4px 0 #994000; color: white;
-            padding: 14px 10px; font-size: 0.9rem;
+            padding: 15px 20px; font-size: 0.9rem;
             font-family: inherit; cursor: pointer;
-            border-radius: 8px; margin-top: 12px;
-            text-transform: uppercase; width: 100%;
-            position: relative; top: 0; transition: top 0.1s, box-shadow 0.1s;
+            border-radius: 8px; margin: 10px;
+            text-transform: uppercase; width: 80%;
+            pointer-events: auto;
+            transition: transform 0.1s;
         }
-        .btn:active { top: 4px; box-shadow: 0 0 0 #994000; }
+        .btn:active { transform: translateY(4px); box-shadow: 0 0 0 #994000; }
         .btn-google { background: #4285F4; box-shadow: 0 4px 0 #0d47a1; }
-        .btn-google:active { box-shadow: 0 0 0 #0d47a1; }
+        .btn-share { background: #25D366; box-shadow: 0 4px 0 #128C7E; }
         
-        .btn-row { display: flex; gap: 8px; width: 100%; margin-top: 10px; }
-        .btn-small { font-size: 0.6rem; padding: 10px; margin: 0; flex: 1; }
+        .btn-tab-container { display: flex; gap: 5px; margin-top: 10px; }
+        .btn-small { width: auto; font-size: 0.6rem; padding: 8px; margin: 0; flex: 1; }
         .btn-active { background: #73BF2E; box-shadow: 0 4px 0 #4c8519; }
-        .btn-active:active { box-shadow: 0 0 0 #4c8519; }
 
-        h1 {
-            color: #F4D03F; -webkit-text-stroke: 1.5px #000;
-            text-shadow: 4px 4px 0 #000; font-size: 2rem; margin: 0 0 20px 0;
-            text-align: center; line-height: 1.2;
+        /* TEXT STYLES */
+        h1 { 
+            color: #F4D03F; -webkit-text-stroke: 2px #000;
+            text-shadow: 4px 4px 0 #000; font-size: 2rem; margin-bottom: 30px;
+            line-height: 1.5; text-align: center;
         }
-
-        /* LEADERBOARD STYLES */
-        .board-container {
-            background: var(--bg-ui); border: 3px solid var(--border);
-            border-radius: 8px; width: 100%; box-sizing: border-box;
-            padding: 10px; margin-bottom: 10px;
+        
+        /* LEADERBOARD & INFO */
+        .leaderboard-box {
+            background: #DED895; border: 3px solid #543847;
+            padding: 10px; border-radius: 10px; margin-bottom: 10px;
+            color: #543847; font-size: 0.7rem; width: 85%;
+            max-height: 200px; overflow-y: auto;
         }
-
-        .rank-list {
-            max-height: 160px; overflow-y: auto;
-            margin-top: 5px;
-            scrollbar-width: thin;
-        }
-        .rank-list::-webkit-scrollbar { width: 4px; }
-        .rank-list::-webkit-scrollbar-thumb { background: var(--border); }
-
+        
         .rank-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 6px 4px; border-bottom: 1px dashed rgba(84, 56, 71, 0.3);
-            font-size: 0.65rem; color: var(--border);
+            padding: 6px 0; border-bottom: 1px dashed #543847; text-align: left;
         }
-        .rank-row:last-child { border-bottom: none; }
-        .rank-me { color: #E86101; font-weight: bold; background: rgba(232, 97, 1, 0.1); }
-        
-        /* USER INFO */
-        #user-top-bar {
-            position: absolute; top: 10px; left: 10px; right: 10px;
-            display: flex; justify-content: space-between; align-items: flex-start;
-            pointer-events: none; z-index: 25;
+        .rank-me { color: #E86101; font-weight: bold; }
+        .city-tag { font-size: 0.5rem; color: #777; display: block; margin-top:2px; }
+
+        /* HUD */
+        #user-info {
+            position: absolute; top: 10px; left: 10px;
+            font-size: 0.6rem; color: white; z-index: 25;
+            text-shadow: 1px 1px 0 #000;
+            display: flex; align-items: center; gap: 8px;
         }
-        .info-pill {
+        #user-photo { width: 30px; height: 30px; border-radius: 50%; border: 2px solid white;}
+        #location-badge {
+            position: absolute; top: 10px; right: 10px;
             background: rgba(0,0,0,0.6); color: white;
-            padding: 4px 8px; border-radius: 20px;
-            font-size: 0.5rem; display: flex; align-items: center; gap: 6px;
-            pointer-events: auto; border: 1px solid rgba(255,255,255,0.3);
+            padding: 5px 8px; border-radius: 6px; font-size: 0.6rem;
+            z-index: 25; display: none; border: 1px solid white;
         }
-        #user-photo { width: 20px; height: 20px; border-radius: 50%; border: 1px solid white; }
     </style>
 </head>
 <body>
 
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
-        <div id="flash-overlay"></div>
+        
+        <div id="user-info" style="display:none;">
+            <img id="user-photo" src="" alt="user">
+            <div><div id="user-name">Player</div></div>
+            <button id="btn-logout" style="font-size:0.5rem; padding:4px 6px; background:#ff4444; border:1px solid #fff; color:white; border-radius:4px; font-family:inherit;">LOGOUT</button>
+        </div>
+        <div id="location-badge">📍 Detecting...</div>
+        <div id="ui-layer"><div id="score">0</div></div>
 
-        <div id="user-top-bar">
-            <div id="user-info" class="info-pill" style="display:none;">
-                <img id="user-photo" src="" alt="u">
-                <span id="user-name">Player</span>
-                <button id="btn-logout" style="background:transparent; border:none; color:#FF6B6B; font-weight:bold; cursor:pointer; font-size:0.8rem;">×</button>
-            </div>
-            <div id="location-badge" class="info-pill" style="display:none;">📍 ...</div>
+        <div id="loading-screen" class="screen" style="display: flex; background: #70C5CE;">
+            <h1 style="font-size: 1rem;">CONNECTING...</h1>
         </div>
 
-        <div id="ui-layer">
-            <div id="score">0</div>
-        </div>
-
-        <div id="login-screen" class="screen" style="display: flex;">
-            <h1>FLAPPY<br>ULTIMATE</h1>
-            <p style="color:white; font-size:0.6rem; text-align:center; margin-bottom:20px; line-height:1.6; text-shadow:1px 1px 0 #000;">
-                RANKING GLOBAL & LOKAL<br>BERBASIS LOKASI
-            </p>
-            <button id="btn-login" class="btn btn-google">LOGIN GOOGLE</button>
-            <button id="btn-offline" class="btn">MAIN OFFLINE</button>
+        <div id="login-screen" class="screen">
+            <h1>FLAPPY<br>BIRD</h1>
+            <button id="btn-login" class="btn btn-google">LOGIN WITH GOOGLE</button>
+            <button id="btn-offline" class="btn">MAIN TANPA LOGIN</button>
         </div>
 
         <div id="start-screen" class="screen">
-            <h1>GET<br>READY</h1>
-            <div style="font-size: 0.6rem; color: #fff; margin-bottom: 15px; text-shadow:1px 1px 0 #000;">
-                TAP TO FLAP
-            </div>
-            <img src="https://img.icons8.com/ios-filled/50/ffffff/hand-cursor.png" style="width:30px; opacity:0.8; animation: bounce 1s infinite;">
-            <style>@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }</style>
+            <h1>READY?</h1>
+            <div style="font-size: 0.7rem; color: #fff; margin-bottom: 20px;">Location: <span id="start-location">Unknown</span></div>
+            <button id="btn-start" class="btn">START GAME</button>
         </div>
 
         <div id="game-over-screen" class="screen">
-            <h1 style="font-size:1.8rem; margin-bottom:10px;">GAME OVER</h1>
-            
-            <div class="board-container">
-                <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
-                    <span style="font-size:0.6rem; color:#543847;">SCORE</span>
-                    <span style="font-size:0.6rem; color:#543847;">BEST</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span id="final-score" style="font-size: 1.5rem; color:var(--primary);">0</span>
-                    <span id="best-score" style="font-size: 1.5rem; color:#543847;">0</span>
-                </div>
+            <div class="leaderboard-box" style="background: #E8D6A5; text-align: center;">
+                <div>SCORE</div>
+                <div id="final-score" style="font-size: 2rem; color:#E86101; margin: 5px 0;">0</div>
+                <button id="btn-share" class="btn btn-share" style="width: 100%; margin: 5px 0; padding: 10px;">SHARE 📢</button>
             </div>
 
-            <div class="btn-row">
+            <div class="btn-tab-container" style="width: 85%;">
                 <button id="btn-tab-world" class="btn btn-small btn-active">WORLD 🌍</button>
-                <button id="btn-tab-city" class="btn btn-small">CITY 🏘️</button>
+                <button id="btn-tab-city" class="btn btn-small">MY CITY 🏘️</button>
             </div>
 
-            <div class="board-container" style="padding:5px; margin-top:5px; background: rgba(255,255,255,0.8);">
-                <div id="leaderboard-list" class="rank-list">Loading...</div>
+            <div class="leaderboard-box">
+                <div id="leaderboard-title" style="text-align: center; border-bottom: 2px solid #543847; margin-bottom:5px; padding-bottom:5px;">TOP WORLD</div>
+                <div id="leaderboard-list">Loading...</div>
             </div>
 
-            <div class="btn-row">
-                <button id="btn-share" class="btn btn-small" style="background:#25D366; box-shadow:0 4px 0 #128C7E;">SHARE WA</button>
-                <button id="btn-retry" class="btn btn-small">RETRY ▶</button>
-            </div>
+            <button id="btn-retry" class="btn">RETRY</button>
         </div>
     </div>
 
     <script type="module">
+        // 1. ERROR CATCHER (Supaya error muncul di HP)
+        window.onerror = function(msg, url, line) {
+            alert("Error Sistem: " + msg + "\nBaris: " + line);
+            return false;
+        };
+
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, getDoc, query, orderBy, limit, getDocs, where } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-        // CONFIG
+        // ==========================================
+        // 2. KONFIGURASI FIREBASE (WAJIB DIISI!)
+        // ==========================================
         const firebaseConfig = {
-            apiKey: "AIzaSyDH6cBMyBCNdzG_tdJNs28AZZIm8HnO8l4",
-            authDomain: "flytap-ca3ee.firebaseapp.com",
-            projectId: "flytap-ca3ee",
-            storageBucket: "flytap-ca3ee.firebasestorage.app",
-            messagingSenderId: "690738199480",
-            appId: "1:690738199480:web:b1b442690440db79016d4d"
-        };
-
-        // VARIABLES
+  apiKey: "AIzaSyDH6cBMyBCNdzG_tdJNs28AZZIm8HnO8l4",
+  authDomain: "flytap-ca3ee.firebaseapp.com",
+  projectId: "flytap-ca3ee",
+  storageBucket: "flytap-ca3ee.firebasestorage.app",
+  messagingSenderId: "690738199480",
+  appId: "1:690738199480:web:b1b442690440db79016d4d"
+};
+        // Init Variables
         let app, auth, db, provider;
         let currentUser = null;
         let userLocation = { city: "Unknown", country: "Unknown" };
         let currentTab = 'world';
-        let highScore = 0;
 
+        // Init Firebase Safe Mode
         try {
+            if(firebaseConfig.apiKey.includes("GANTI")) {
+                throw new Error("API KEY BELUM DIISI! Edit file index.html");
+            }
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
             provider = new GoogleAuthProvider();
-        } catch(e) { console.error("Firebase init failed", e); }
+        } catch (e) {
+            alert(e.message);
+        }
 
-        // GAME ENGINE
+        // ==========================================
+        // 3. GAME ENGINE & LOGIC
+        // ==========================================
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const flashOverlay = document.getElementById('flash-overlay');
         
-        let frames = 0;
-        let gameState = 'START'; // START, PLAYING, DYING, GAMEOVER
-        let gameScore = 0;
-        let scale = 1; // Logic scaler
-
-        const CONSTANTS = {
-            gravity: 0.25,
-            jump: 5,
-            speed: 2,
-            gap: 130, // Lebih lebar biar mudah sedikit
-            spawnRate: 140
+        // DOM Elements
+        const screens = {
+            loading: document.getElementById('loading-screen'),
+            login: document.getElementById('login-screen'),
+            start: document.getElementById('start-screen'),
+            gameOver: document.getElementById('game-over-screen')
+        };
+        const els = {
+            score: document.getElementById('score'),
+            finalScore: document.getElementById('final-score'),
+            locBadge: document.getElementById('location-badge'),
+            startLoc: document.getElementById('start-location'),
+            list: document.getElementById('leaderboard-list'),
+            title: document.getElementById('leaderboard-title'),
+            btnCity: document.getElementById('btn-tab-city'),
+            btnWorld: document.getElementById('btn-tab-world')
         };
 
-        // Responsive Canvas
+        const CONFIG = {
+            gravity: 0.45, jump: 7.5, gap: 115, speed: 2.5, spawnRate: 110
+        };
+
+        let state = {
+            frames: 0, score: 0, running: false, startTime: 0, 
+            clouds: [], mountains: []
+        };
+
+        // Resize Canvas Proper
         function resize() {
-            const container = canvas.parentElement;
-            const dpr = window.devicePixelRatio || 1;
-            // Set ukuran display CSS
-            canvas.style.width = container.clientWidth + 'px';
-            canvas.style.height = container.clientHeight + 'px';
-            // Set ukuran buffer memori (dikalikan DPR agar tajam)
-            canvas.width = container.clientWidth * dpr;
-            canvas.height = container.clientHeight * dpr;
-            // Normalize coordinate system
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0); 
-            
-            // Logic scale base: width 360 reference
-            scale = container.clientWidth / 360; 
-            ground.y = container.clientHeight - 100;
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
         }
         window.addEventListener('resize', resize);
-        
-        // --- ENTITIES ---
+        resize();
+
+        // --- BACKGROUND SYSTEM ---
+        const colors = {
+            daySky: [112, 197, 206], nightSky: [20, 24, 82],
+            dayMtn: [86, 161, 171], nightMtn: [15, 18, 60],
+            dayCloud: [255, 255, 255], nightCloud: [80, 80, 120]
+        };
+
+        function lerp(a, b, t) { return `rgb(${Math.round(a[0]+t*(b[0]-a[0]))},${Math.round(a[1]+t*(b[1]-a[1]))},${Math.round(a[2]+t*(b[2]-a[2]))})`; }
+
+        function initBg() {
+            state.clouds = []; state.mountains = [];
+            for(let i=0; i<5; i++) state.clouds.push({x: Math.random()*canvas.width, y: Math.random()*300, s: 0.5+Math.random(), r: 20+Math.random()*20});
+            for(let i=0; i<4; i++) state.mountains.push({x: i*(canvas.width/3), w: canvas.width/3+2, h: 100+Math.random()*80});
+        }
+
+        function drawBg(pos) {
+            const sky = lerp(colors.daySky, colors.nightSky, pos);
+            ctx.fillStyle = sky; ctx.fillRect(0,0,canvas.width,canvas.height);
+            document.getElementById('game-container').style.background = sky;
+
+            // Clouds
+            ctx.fillStyle = lerp(colors.dayCloud, colors.nightCloud, pos);
+            state.clouds.forEach(c => {
+                ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI*2); ctx.fill();
+                if(state.running) c.x -= c.s; 
+                if(c.x < -50) c.x = canvas.width + 50;
+            });
+
+            // Mountains
+            ctx.fillStyle = lerp(colors.dayMtn, colors.nightMtn, pos);
+            state.mountains.forEach(m => {
+                ctx.beginPath(); ctx.moveTo(m.x, canvas.height-112); ctx.lineTo(m.x+m.w/2, canvas.height-112-m.h); ctx.lineTo(m.x+m.w, canvas.height-112); ctx.fill();
+                if(state.running) m.x -= CONFIG.speed * 0.2;
+                if(m.x+m.w < 0) m.x = canvas.width; // Loop
+            });
+        }
+
+        // --- GAME OBJECTS ---
         const bird = {
-            x: 50, y: 150, r: 12, v: 0, rot: 0,
-            draw() {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                let rotTarget = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (this.v * 0.1)));
-                if(gameState === 'DYING') rotTarget = Math.PI/2; // Jatuh tegak lurus
-                this.rot += (rotTarget - this.rot) * 0.1;
-                ctx.rotate(this.rot);
+            x: 60, y: 200, r: 14, v: 0,
+            draw: function() {
+                ctx.save(); ctx.translate(this.x, this.y);
+                let rot = Math.min(Math.PI/4, Math.max(-Math.PI/4, this.v*0.1));
+                ctx.rotate(rot);
                 
                 // Bird Art
-                ctx.beginPath(); ctx.ellipse(0, 0, this.r*1.2, this.r, 0, 0, Math.PI*2); 
-                ctx.fillStyle = "#FFD700"; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle="#000"; ctx.stroke();
-                // Eye
-                ctx.beginPath(); ctx.arc(6, -4, 5, 0, Math.PI*2); ctx.fillStyle="#FFF"; ctx.fill(); ctx.stroke();
-                ctx.beginPath(); ctx.arc(8, -4, 2, 0, Math.PI*2); ctx.fillStyle="#000"; ctx.fill();
-                // Wing
-                ctx.beginPath(); ctx.ellipse(-4, 4, 7, 4, -0.2, 0, Math.PI*2); ctx.fillStyle="#FFF"; ctx.fill(); ctx.stroke();
-                // Beak
-                ctx.beginPath(); ctx.moveTo(8, 2); ctx.lineTo(16, 6); ctx.lineTo(8, 10); ctx.fillStyle="#E86101"; ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.ellipse(0,0,16,13,0,0,Math.PI*2);
+                ctx.fillStyle="#FFD700"; ctx.fill(); ctx.stroke(); // Body
+                ctx.beginPath(); ctx.arc(8,-6,6,0,Math.PI*2); ctx.fillStyle="#FFF"; ctx.fill(); ctx.stroke(); // Eye White
+                ctx.beginPath(); ctx.arc(10,-6,2,0,Math.PI*2); ctx.fillStyle="#000"; ctx.fill(); // Pupil
+                ctx.beginPath(); ctx.moveTo(10,2); ctx.lineTo(22,8); ctx.lineTo(10,14); ctx.fillStyle="#E86101"; ctx.fill(); ctx.stroke(); // Beak
+                let wingY = this.v < 0 ? 6 : -4;
+                ctx.beginPath(); ctx.ellipse(-6,wingY,9,6,-0.2,0,Math.PI*2); ctx.fillStyle="#FFF"; ctx.fill(); ctx.stroke(); // Wing
                 
                 ctx.restore();
             },
-            update() {
-                this.v += CONSTANTS.gravity * scale;
-                this.y += this.v;
-
-                // Ground Collision
-                if (this.y + this.r >= ground.y) {
-                    this.y = ground.y - this.r;
-                    finishGame();
-                }
+            update: function() {
+                this.v += CONFIG.gravity; this.y += this.v;
+                if(this.y >= canvas.height-112-this.r) { this.y = canvas.height-112-this.r; gameOver(); }
+                if(this.y < this.r) { this.y = this.r; this.v = 0; }
             },
-            flap() {
-                if (this.y > 0) this.v = -CONSTANTS.jump * scale;
-            }
+            flap: function() { this.v = -CONFIG.jump; }
         };
 
         const pipes = {
-            items: [], w: 50,
-            reset() { this.items = []; },
-            update() {
-                if (frames % CONSTANTS.spawnRate === 0) {
-                    const min = 50 * scale;
-                    const max = ground.y - CONSTANTS.gap * scale - 50 * scale;
-                    const y = Math.floor(Math.random() * (max - min + 1) + min);
-                    this.items.push({ x: canvas.width / (window.devicePixelRatio||1), y: y, passed: false });
-                }
-
-                for (let i = 0; i < this.items.length; i++) {
-                    let p = this.items[i];
-                    p.x -= CONSTANTS.speed * scale;
-
-                    // Collision Logic (Sedikit pemaaf -2px)
-                    const hitbox = 4; 
-                    if (
-                        bird.x + bird.r - hitbox > p.x && 
-                        bird.x - bird.r + hitbox < p.x + this.w
-                    ) {
-                        if (bird.y - bird.r + hitbox < p.y || bird.y + bird.r - hitbox > p.y + CONSTANTS.gap * scale) {
-                            hitPipe();
-                        }
-                    }
-
-                    // Score
-                    if (p.x + this.w < bird.x && !p.passed) {
-                        gameScore++;
-                        document.getElementById('score').innerText = gameScore;
-                        p.passed = true;
-                    }
-
-                    // Remove
-                    if (p.x + this.w < -50) {
-                        this.items.shift();
-                        i--;
-                    }
-                }
-            },
-            draw() {
-                ctx.fillStyle = "#73BF2E"; ctx.strokeStyle = "#000"; ctx.lineWidth = 2;
-                for (let p of this.items) {
-                    // Top Pipe
-                    ctx.fillRect(p.x, 0, this.w, p.y); 
-                    ctx.strokeRect(p.x, -2, this.w, p.y+2);
-                    ctx.fillRect(p.x-2, p.y-20, this.w+4, 20); ctx.strokeRect(p.x-2, p.y-20, this.w+4, 20);
+            arr: [], w: 56,
+            draw: function() {
+                this.arr.forEach(p => {
+                    let topH = p.y, botY = p.y + CONFIG.gap;
+                    let botH = canvas.height - 112 - botY;
+                    ctx.fillStyle="#73BF2E"; ctx.strokeStyle="#000"; ctx.lineWidth=2;
                     
-                    // Bottom Pipe
-                    let botY = p.y + CONSTANTS.gap * scale;
-                    let botH = ground.y - botY;
-                    ctx.fillRect(p.x, botY, this.w, botH); 
-                    ctx.strokeRect(p.x, botY, this.w, botH); // Fixed overlap
-                    ctx.fillRect(p.x-2, botY, this.w+4, 20); ctx.strokeRect(p.x-2, botY, this.w+4, 20);
+                    // Top
+                    ctx.fillRect(p.x, 0, this.w, topH); ctx.strokeRect(p.x,-2,this.w,topH+2);
+                    ctx.fillRect(p.x-3, topH-26, this.w+6, 26); ctx.strokeRect(p.x-3,topH-26,this.w+6,26);
+                    // Bot
+                    ctx.fillRect(p.x, botY, this.w, botH); ctx.strokeRect(p.x,botY,this.w,botH+2);
+                    ctx.fillRect(p.x-3, botY, this.w+6, 26); ctx.strokeRect(p.x-3,botY,this.w+6,26);
+                });
+            },
+            update: function() {
+                if(state.frames % CONFIG.spawnRate === 0) {
+                    let min = 50, max = canvas.height - 112 - CONFIG.gap - 50;
+                    this.arr.push({ x: canvas.width, y: Math.floor(Math.random()*(max-min)+min), passed: false });
+                }
+                for(let i=0; i<this.arr.length; i++) {
+                    let p = this.arr[i]; p.x -= CONFIG.speed;
+                    // Collision
+                    if(bird.x+bird.r > p.x && bird.x-bird.r < p.x+this.w) {
+                        if(bird.y-bird.r < p.y || bird.y+bird.r > p.y+CONFIG.gap) gameOver();
+                    }
+                    // Score
+                    if(p.x+this.w < bird.x && !p.passed) { state.score++; els.score.innerText = state.score; p.passed = true; }
+                    // Remove
+                    if(p.x < -60) { this.arr.shift(); i--; }
                 }
             }
         };
 
         const ground = {
-            y: 0, x: 0,
-            draw() {
-                ctx.fillStyle = "#DED895";
-                ctx.fillRect(0, this.y, canvas.width, canvas.height - this.y);
-                // Grass
-                ctx.fillStyle = "#73BF2E"; ctx.fillRect(0, this.y, canvas.width, 15);
-                ctx.beginPath(); ctx.moveTo(0, this.y); ctx.lineTo(canvas.width, this.y); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(0, this.y+15); ctx.lineTo(canvas.width, this.y+15); ctx.stroke();
-                
-                // Stripes
-                ctx.save(); ctx.beginPath();
-                ctx.rect(0, this.y+1, canvas.width, 14); ctx.clip();
-                ctx.strokeStyle = "#558C22"; ctx.lineWidth = 2;
-                for(let i=0; i<canvas.width/10 + 5; i++) {
-                    let ox = (this.x % 20) + (i*20) - 20;
-                    ctx.moveTo(ox, this.y); ctx.lineTo(ox+10, this.y+15);
-                }
-                ctx.stroke(); ctx.restore();
+            x: 0, h: 112,
+            draw: function() {
+                let y = canvas.height - this.h;
+                ctx.fillStyle="#DED895"; ctx.fillRect(0, y, canvas.width, this.h);
+                ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.lineWidth=3; ctx.stroke();
+                ctx.fillStyle="#73BF2E"; ctx.fillRect(0,y,canvas.width,15);
+                ctx.beginPath(); ctx.moveTo(0,y+15); ctx.lineTo(canvas.width,y+15); ctx.lineWidth=2; ctx.stroke();
             },
-            update() {
-                this.x -= CONSTANTS.speed * scale;
+            update: function() {
+                this.x -= CONFIG.speed; 
+                // Efek parallax sederhana lewat pola
             }
         };
 
-        // --- GAME LOOP ---
-        function loop() {
-            ctx.clearRect(0,0, canvas.width, canvas.height);
-            
-            // Draw Background (Simple Gradient)
-            const grad = ctx.createLinearGradient(0,0,0,canvas.height);
-            grad.addColorStop(0, "#70C5CE"); grad.addColorStop(1, "#A0E0E0");
-            ctx.fillStyle = grad; ctx.fillRect(0,0,canvas.width, canvas.height);
-
-            if (gameState === 'PLAYING') {
-                pipes.update();
-                ground.update();
-            }
-            pipes.draw();
-            ground.draw();
-
-            if (gameState === 'PLAYING' || gameState === 'DYING') {
-                bird.update();
-                bird.draw();
-                frames++;
-            } else if (gameState === 'START') {
-                bird.y = canvas.height/2.5 + Math.sin(Date.now()/300)*5; // Hover
-                bird.draw();
-                ground.update(); // Ground moves in menu
-            }
-
-            requestAnimationFrame(loop);
-        }
-
-        function hitPipe() {
-            if (gameState !== 'PLAYING') return;
-            gameState = 'DYING'; // Bird falls, pipes stop
-            bird.v = 0; // Stop upward momentum, start falling
-            
-            // Flash Effect
-            flashOverlay.style.opacity = '0.8';
-            setTimeout(() => flashOverlay.style.opacity = '0', 100);
-        }
-
-        function finishGame() {
-            if (gameState === 'GAMEOVER') return;
-            gameState = 'GAMEOVER';
-            
-            // Update UI
-            document.getElementById('score').style.display = 'none';
-            document.getElementById('final-score').innerText = gameScore;
-            
-            if (gameScore > highScore) highScore = gameScore;
-            document.getElementById('best-score').innerText = highScore;
-
-            document.getElementById('game-over-screen').style.display = 'flex';
-            
-            saveScore();
-            switchTab('world');
-        }
-
+        // --- GAME CONTROL ---
         function startGame() {
-            gameState = 'PLAYING';
-            bird.y = canvas.height / 2.5;
-            bird.v = 0; bird.rot = 0;
-            gameScore = 0; frames = 0;
-            pipes.reset();
-            
-            document.getElementById('score').innerText = '0';
-            document.getElementById('score').style.display = 'block';
-            document.getElementById('start-screen').style.display = 'none';
-            document.getElementById('game-over-screen').style.display = 'none';
+            Object.values(screens).forEach(s => s.style.display = 'none');
+            state.running = true; state.score = 0; state.frames = 0;
+            els.score.innerText = "0";
+            bird.y = canvas.height/2; bird.v = 0;
+            pipes.arr = [];
+            state.startTime = Date.now();
+            initBg();
+            gameLoop();
         }
 
-        // INPUT
-        function inputAction(e) {
-            if (e.type === 'keydown' && e.code !== 'Space') return;
-            if (e.type !== 'keydown') e.preventDefault(); // Prevent scroll/zoom
+        function gameOver() {
+            state.running = false;
+            els.finalScore.innerText = state.score;
+            els.score.innerText = "";
+            screens.gameOver.style.display = 'flex';
+            saveScore(state.score);
+            loadLeaderboard('world');
+        }
 
-            if (gameState === 'START') {
-                document.getElementById('start-screen').style.display = 'none';
-                startGame();
-            } else if (gameState === 'PLAYING') {
+        function gameLoop() {
+            if(!state.running) return;
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            
+            let cycle = (Math.sin(state.frames/2500)+1)/2; // Day/Night
+            drawBg(cycle);
+
+            pipes.update(); pipes.draw();
+            ground.update(); ground.draw();
+            bird.update(); bird.draw();
+
+            state.frames++;
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Input Handler (Touch & Click)
+        function handleInput(e) {
+            if((e.type === 'touchstart' || e.type === 'mousedown' || e.code === 'Space') && state.running) {
                 bird.flap();
             }
         }
-        window.addEventListener('keydown', inputAction);
-        canvas.addEventListener('touchstart', inputAction, {passive: false});
-        canvas.addEventListener('mousedown', inputAction);
+        window.addEventListener('keydown', handleInput);
+        canvas.addEventListener('touchstart', (e)=>{ e.preventDefault(); handleInput(e); }, {passive:false});
+        canvas.addEventListener('mousedown', handleInput);
 
-        // --- FIREBASE LOGIC ---
+        // ==========================================
+        // 4. FIREBASE & LEADERBOARD LOGIC
+        // ==========================================
         
-        async function detectLocation() {
-            try {
-                const r = await fetch('https://ipapi.co/json/');
-                const d = await r.json();
-                if (d.city) {
-                    userLocation = { city: d.city, country: d.country_name };
-                    const badge = document.getElementById('location-badge');
-                    badge.style.display = 'flex';
-                    badge.innerText = `📍 ${d.city}`;
-                }
-            } catch(e) {}
-        }
-        detectLocation();
+        // Setup Button Listeners (PENGGANTI ONCLICK)
+        document.getElementById('btn-login').addEventListener('click', () => signInWithPopup(auth, provider).catch(e=>alert(e.message)));
+        document.getElementById('btn-offline').addEventListener('click', () => { screens.login.style.display='none'; screens.start.style.display='flex'; });
+        document.getElementById('btn-logout').addEventListener('click', () => signOut(auth).then(()=>window.location.reload()));
+        document.getElementById('btn-start').addEventListener('click', startGame);
+        document.getElementById('btn-retry').addEventListener('click', startGame);
+        document.getElementById('btn-tab-world').addEventListener('click', () => loadLeaderboard('world'));
+        document.getElementById('btn-tab-city').addEventListener('click', () => loadLeaderboard('city'));
+        document.getElementById('btn-share').addEventListener('click', shareScore);
 
-        if (auth) {
-            onAuthStateChanged(auth, u => {
-                currentUser = u;
-                if(u) {
-                    document.getElementById('login-screen').style.display = 'none';
-                    document.getElementById('start-screen').style.display = 'flex';
+        // Location Detection
+        async function getLoc() {
+            try {
+                let req = await fetch('https://ipapi.co/json/');
+                let res = await req.json();
+                if(res.city) {
+                    userLocation = { city: res.city, country: res.country_name };
+                    els.locBadge.style.display = 'block';
+                    els.locBadge.innerText = `📍 ${res.city}`;
+                    els.startLoc.innerText = res.city;
+                    els.btnCity.innerText = `${res.city.toUpperCase()} 🏘️`;
+                }
+            } catch(e) { console.log("Loc fail"); }
+        }
+        getLoc();
+
+        // Auth State
+        if(auth) {
+            onAuthStateChanged(auth, (user) => {
+                screens.loading.style.display = 'none'; // Hide loading
+                if(user) {
+                    currentUser = user;
+                    screens.login.style.display = 'none';
+                    screens.start.style.display = 'flex';
                     document.getElementById('user-info').style.display = 'flex';
-                    document.getElementById('user-name').innerText = u.displayName.split(' ')[0];
-                    document.getElementById('user-photo').src = u.photoURL;
-                    loadHighScore();
+                    document.getElementById('user-name').innerText = user.displayName.split(' ')[0];
+                    document.getElementById('user-photo').src = user.photoURL;
                 } else {
-                    document.getElementById('login-screen').style.display = 'flex';
+                    currentUser = null;
+                    screens.login.style.display = 'flex';
+                    document.getElementById('user-info').style.display = 'none';
                 }
             });
+        } else {
+            screens.loading.style.display = 'none';
+            screens.login.style.display = 'flex';
         }
 
-        async function loadHighScore() {
+        // Save Score
+        async function saveScore(s) {
             if(!currentUser || !db) return;
-            const docSnap = await getDoc(doc(db, "scores", currentUser.uid));
-            if(docSnap.exists()) highScore = docSnap.data().score || 0;
+            // Anti-cheat simple logic
+            let dur = (Date.now() - state.startTime)/1000;
+            if(s > 5 && dur < s*0.8) return; 
+
+            try {
+                const ref = doc(db, "scores", currentUser.uid);
+                const snap = await getDoc(ref);
+                let old = snap.exists() ? snap.data().score : 0;
+                
+                if(s > old || (snap.exists() && !snap.data().city)) {
+                    await setDoc(ref, {
+                        name: currentUser.displayName, photo: currentUser.photoURL,
+                        score: Math.max(s, old), timestamp: Date.now(),
+                        city: userLocation.city, country: userLocation.country
+                    }, { merge: true });
+                }
+            } catch(e) { console.error(e); }
         }
 
-        async function saveScore() {
-            if(!currentUser || !db) return;
-            const ref = doc(db, "scores", currentUser.uid);
-            // Hanya save jika score > best
-            if(gameScore > highScore) {
-                 await setDoc(ref, {
-                    name: currentUser.displayName,
-                    photo: currentUser.photoURL,
-                    score: gameScore,
-                    city: userLocation.city,
-                    country: userLocation.country,
-                    timestamp: Date.now()
-                }, { merge: true });
-            }
-        }
-
-        window.switchTab = async function(t) {
-            currentTab = t;
-            const btnW = document.getElementById('btn-tab-world');
-            const btnC = document.getElementById('btn-tab-city');
-            const list = document.getElementById('leaderboard-list');
+        // Load Leaderboard
+        async function loadLeaderboard(type) {
+            if(!db) return;
+            currentTab = type;
+            els.list.innerHTML = "Loading...";
             
-            btnW.className = t==='world' ? 'btn btn-small btn-active' : 'btn btn-small';
-            btnC.className = t==='city' ? 'btn btn-small btn-active' : 'btn btn-small';
-            
-            list.innerHTML = 'Loading...';
-
-            if(!db) { list.innerHTML = "Offline Mode"; return; }
+            // UI Toggle
+            els.btnWorld.className = type=='world' ? 'btn btn-small btn-active' : 'btn btn-small';
+            els.btnCity.className = type=='city' ? 'btn btn-small btn-active' : 'btn btn-small';
 
             try {
                 let q;
                 const ref = collection(db, "scores");
-                
-                if (t === 'world') {
-                    q = query(ref, orderBy("score", "desc"), limit(20));
+                if(type === 'world') {
+                    els.title.innerText = "TOP WORLD 🌍";
+                    q = query(ref, orderBy("score", "desc"), limit(10));
                 } else {
-                    // Cek jika city valid
-                    if(userLocation.city === 'Unknown') {
-                        list.innerHTML = "Locating city...";
-                        return;
-                    }
-                    // NOTICE: INI BUTUH COMPOSITE INDEX DI FIREBASE CONSOLE
-                    // Collection: scores, Fields: city Ascending, score Descending
-                    q = query(ref, where("city", "==", userLocation.city), orderBy("score", "desc"), limit(20));
+                    els.title.innerText = `TOP ${userLocation.city.toUpperCase()} 🏘️`;
+                    q = query(ref, where("city", "==", userLocation.city), orderBy("score", "desc"), limit(10));
                 }
 
                 const snap = await getDocs(q);
-                if(snap.empty) { list.innerHTML = "No records yet."; return; }
-                
+                if(snap.empty) { els.list.innerHTML = "<div style='text-align:center; padding:10px;'>No data.</div>"; return; }
+
                 let html = ""; let i = 1;
                 snap.forEach(d => {
-                    const val = d.data();
-                    const isMe = currentUser && d.id === currentUser.uid;
+                    let data = d.data();
+                    let isMe = currentUser && d.id === currentUser.uid;
+                    let tag = (type==='world' && data.city) ? `<span class="city-tag">📍 ${data.city}</span>` : '';
                     html += `
-                    <div class="rank-row ${isMe?'rank-me':''}">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <b style="width:20px;">#${i}</b>
-                            <span>${val.name.substring(0,12)}</span>
-                        </div>
-                        <b>${val.score}</b>
-                    </div>`;
+                        <div class="rank-row ${isMe ? 'rank-me' : ''}">
+                            <div style="display:flex;align-items:center;gap:8px;width:75%;">
+                                <span style="font-weight:bold; width:20px;">#${i}</span>
+                                <div style="display:flex;flex-direction:column;overflow:hidden;">
+                                    <span>${data.name.substring(0, 12)}</span>
+                                    ${tag}
+                                </div>
+                            </div>
+                            <span style="font-size:0.8rem;">${data.score}</span>
+                        </div>`;
                     i++;
                 });
-                list.innerHTML = html;
-
+                els.list.innerHTML = html;
             } catch(e) {
-                console.log(e);
-                if(e.message.includes('index')) {
-                    list.innerHTML = "<span style='color:red;font-size:0.5rem'>Admin: Create Index in Console!<br>city (asc) + score (desc)</span>";
-                } else {
-                    list.innerHTML = "Error loading data.";
-                }
+                if(e.message.includes("index")) els.list.innerHTML = "<div style='color:red;'>Index Required (Check Console)</div>";
+                else els.list.innerHTML = "Error loading data.";
             }
         }
 
-        // UI Events
-        document.getElementById('btn-login').onclick = () => signInWithPopup(auth, provider);
-        document.getElementById('btn-logout').onclick = () => signOut(auth);
-        document.getElementById('btn-offline').onclick = () => {
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('start-screen').style.display = 'flex';
-        };
-        document.getElementById('btn-retry').onclick = (e) => {
-            e.stopPropagation(); // Biar gak langsung lompat
-            startGame();
-        }
-        document.getElementById('btn-tab-world').onclick = (e) => { e.stopPropagation(); switchTab('world'); }
-        document.getElementById('btn-tab-city').onclick = (e) => { e.stopPropagation(); switchTab('city'); }
-        document.getElementById('btn-share').onclick = (e) => {
-             e.stopPropagation();
-             const txt = `Aku dapet skor ${gameScore} di Flappy Ultimate! 📍 ${userLocation.city}`;
-             window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`);
+        // Share
+        async function shareScore() {
+            const data = {
+                title: 'Flappy Bird',
+                text: `Skor saya: ${state.score} di Flappy Bird Regional!`,
+                url: window.location.href
+            };
+            if(navigator.share) {
+                try { await navigator.share(data); } catch(e){}
+            } else {
+                window.open(`https://wa.me/?text=${encodeURIComponent(data.text + ' ' + data.url)}`);
+            }
         }
 
-        // Init
-        resize();
-        loop();
+        // Init Background
+        initBg();
+        drawBg(0);
+        ground.draw();
 
     </script>
 </body>
