@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Flappy Dolan Sawah - Fixed Version</title>
+    <title>Flappy Dolan Sawah - Final Fixed</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -33,8 +33,7 @@
         .ui-layer { position: absolute; width: 100%; pointer-events: none; z-index: 10; text-align: center; }
         
         #score-display {
-            top: 10%; /* UX: Dinaikkan sedikit agar tidak menghalangi pandangan */
-            font-size: 4rem; color: white;
+            top: 10%; font-size: 4rem; color: white;
             -webkit-text-stroke: 2px #000; text-shadow: 4px 4px 0 #000;
         }
 
@@ -122,7 +121,7 @@
     </div>
 
     <script>
-        // --- 1. CONFIG & SYSTEM CONSTANTS ---
+        // --- 1. CONFIG & SYSTEM ---
         const CONFIG = {
             gravity: 0.5,
             jump: 8.0,
@@ -132,7 +131,6 @@
         };
 
         const canvas = document.getElementById('gameCanvas');
-        // FIX: Hapus alpha:false agar CSS background gradient terlihat
         const ctx = canvas.getContext('2d'); 
 
         // --- 2. ASSETS GENERATOR ---
@@ -182,13 +180,11 @@
             frames: 0, score: 0,
             bird: { y: 0, v: 0, rot: 0 },
             pipes: [],
-            clockInt: null, // FIX: Variabel untuk menyimpan interval
+            clockInt: null,
 
-            // Method Reset
             start: function() {
                 resize();
-                this.stopVoucherClock(); // FIX: Bersihkan timer lama
-
+                this.stopVoucherClock();
                 this.state = 'PLAY';
                 this.bird.y = canvas.height / 2;
                 this.bird.v = 0;
@@ -196,13 +192,12 @@
                 this.pipes = [];
                 this.score = 0;
                 this.frames = 0;
-                
                 document.getElementById('score-display').innerText = 0;
                 this.showScreen(null);
             },
 
             menu: function() {
-                this.stopVoucherClock(); // FIX: Bersihkan timer lama
+                this.stopVoucherClock();
                 this.state = 'START';
                 this.showScreen('screen-start');
             },
@@ -228,10 +223,7 @@
                 const d = new Date();
                 const code = `DS-${d.getDate()}${d.getMonth()+1}-${Math.floor(Math.random()*9000)+1000}`;
                 document.getElementById('voucher-code').innerText = code;
-                
-                this.stopVoucherClock(); // Safety check
-                
-                // Update jam real-time
+                this.stopVoucherClock();
                 const updateTime = () => {
                     document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('id-ID');
                 };
@@ -239,114 +231,84 @@
                 this.clockInt = setInterval(updateTime, 1000);
             },
 
-            // FIX: Helper untuk membersihkan interval (Memory Leak Fix)
             stopVoucherClock: function() {
-                if(this.clockInt) {
-                    clearInterval(this.clockInt);
-                    this.clockInt = null;
-                }
+                if(this.clockInt) { clearInterval(this.clockInt); this.clockInt = null; }
             }
         };
 
-        // --- 4. MAIN LOOP (FIX: Time-Based Step) ---
-        // Variabel untuk FPS Limiter
+        // --- 4. MAIN LOOP (Delta Time Fixed) ---
         let lastTime = 0;
         const targetFPS = 60;
-        const frameInterval = 1000 / targetFPS; // ~16.67ms
+        const frameInterval = 1000 / targetFPS;
 
         function loop(timestamp) {
             if (!lastTime) lastTime = timestamp;
             const deltaTime = timestamp - lastTime;
 
-            // Hanya update jika waktu yang lewat sudah cukup untuk 1 frame (Cap 60 FPS)
-            // Ini mencegah game berjalan 2x lebih cepat di layar 120Hz
             if (deltaTime >= frameInterval) {
                 lastTime = timestamp - (deltaTime % frameInterval);
-
-                if(game.state === 'PLAY') {
-                    updatePhysics();
-                }
+                if(game.state === 'PLAY') updatePhysics();
                 draw();
             }
-            
             requestAnimationFrame(loop);
         }
 
         function updatePhysics() {
             game.frames++;
-
-            // 1. Bird Physics
             game.bird.v += CONFIG.gravity;
             game.bird.y += game.bird.v;
             game.bird.rot = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (game.bird.v * 0.1)));
 
-            // 2. Pipe Spawning
+            // Spawn Pipa
             if(game.frames % 90 === 0) {
                 let safe = 100;
                 let min = safe;
                 let max = canvas.height - 112 - CONFIG.gap - safe;
-                // Proteksi jika layar terlalu pendek
                 if (max < min) max = min;
-                
                 let h = Math.floor(Math.random() * (max - min + 1) + min);
                 game.pipes.push({ x: canvas.width, topH: h, passed: false });
             }
 
-            // 3. Collision & Logic
-            const bX = 60; 
-            const bRad = 16; 
-
+            // Logic Collision
+            const bX = 60; const bRad = 16; 
             for(let i = 0; i < game.pipes.length; i++) {
                 let p = game.pipes[i];
                 p.x -= CONFIG.speed;
 
-                // Hitbox Check
+                // Hitbox
                 if(bX + bRad > p.x + 4 && bX - bRad < p.x + 60) {
                     if(game.bird.y - bRad < p.topH || game.bird.y + bRad > p.topH + CONFIG.gap) {
                         game.over();
                     }
                 }
-
                 // Score
                 if(p.x + 64 < bX && !p.passed) {
                     game.score++;
                     document.getElementById('score-display').innerText = game.score;
                     p.passed = true;
                 }
-
-                // Clean up pipes
+                // Clean
                 if(p.x < -70) { game.pipes.shift(); i--; }
             }
 
-            // 4. Boundaries
+            // Batas Bawah & Atas
             let groundY = canvas.height - 50;
-            
-            // Jatuh ke tanah
-            if(game.bird.y >= groundY - 15) {
-                game.bird.y = groundY - 15;
-                game.over();
-            }
-            
-            // FIX: Menabrak langit = Mati (Anti-Cheat)
-            if(game.bird.y <= 0) {
-                game.bird.y = 0;
-                game.over();
-            }
+            if(game.bird.y >= groundY - 15) { game.bird.y = groundY - 15; game.over(); }
+            if(game.bird.y <= 0) { game.bird.y = 0; game.over(); }
         }
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Draw Pipes
+            // Draw Pipa
             for(let p of game.pipes) {
                 ctx.drawImage(assets.pipeTop, p.x, p.topH - 800);
                 ctx.drawImage(assets.pipeBot, p.x, p.topH + CONFIG.gap);
             }
 
-            // Draw Ground
+            // Draw Tanah
             let groundY = canvas.height - 50;
             let offset = (game.frames * CONFIG.speed) % 24;
-            
             ctx.fillStyle = "#DED895"; ctx.fillRect(0, groundY, canvas.width, 50);
             ctx.lineWidth = 3; ctx.strokeStyle = "#543847";
             ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(canvas.width, groundY); ctx.stroke();
@@ -356,17 +318,15 @@
                 ctx.beginPath(); ctx.moveTo(i, groundY); ctx.lineTo(i+12, groundY); ctx.lineTo(i+6, groundY+10); ctx.fill();
             }
 
-            // Draw Bird
+            // Draw Burung
             if(assets.bird) {
                 ctx.save();
                 let drawY = game.bird.y;
                 let drawRot = game.bird.rot;
-                
                 if(game.state === 'START') {
                     drawY = canvas.height/2 + Math.sin(Date.now()/300)*10;
                     drawRot = 0;
                 }
-
                 ctx.translate(60, drawY);
                 ctx.rotate(drawRot);
                 ctx.drawImage(assets.bird, -22, -16);
@@ -374,62 +334,56 @@
             }
         }
 
-        // --- 5. INPUT HANDLING (FIXED & UNIFIED) ---
+        // --- 5. INPUT HANDLING (FIXED BUTTONS) ---
         function inputAction(e) {
-            // FIX: Mencegah scroll/zoom pada touch device
+            // PENTING: Jika target adalah tombol, biarkan browser memproses kliknya.
+            // Jangan jalankan preventDefault atau logika lompat.
+            if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+                return; 
+            }
+
+            // Jika bukan tombol, cegah scroll & jalankan game
             if(e.type === 'touchstart' || e.type === 'touchmove') {
                 if(e.cancelable) e.preventDefault();
             }
             
-            // FIX: Mencegah tombol fisik (seperti button di HTML) mentrigger input game 2x
-            if (e.target.tagName === 'BUTTON') return;
-
-            // Logic Input Game
             if (game.state === 'START') {
                 game.start();
             } else if (game.state === 'PLAY') {
                 game.bird.v = -CONFIG.jump;
             } else if (game.state === 'OVER') {
-                // UX FIX: Tekan layar/spasi saat Game Over langsung restart
                 game.start();
             }
         }
-
-        // Event Listeners yang lebih bersih
-        window.addEventListener('resize', resize);
-        
-        // Touchstart dengan passive:false agar bisa preventDefault
-        window.addEventListener('touchstart', inputAction, {passive: false});
-        
-        // Mousedown untuk PC
-        window.addEventListener('mousedown', (e) => {
-            // Cek sederhana agar tidak bentrok dengan touch di beberapa browser hybrid
-            inputAction(e);
-        });
-
-        // Keyboard Spacebar
-        window.addEventListener('keydown', (e) => {
-            if(e.code === 'Space') inputAction(e);
-        });
-
-        // Event Handler untuk Tombol HTML (Explicit binding)
-        document.getElementById('btn-start').onclick = (e) => { e.stopPropagation(); game.start(); };
-        document.getElementById('btn-restart').onclick = (e) => { e.stopPropagation(); game.start(); };
-        document.getElementById('btn-menu').onclick = (e) => { e.stopPropagation(); game.menu(); };
-        document.getElementById('btn-voucher-done').onclick = (e) => { e.stopPropagation(); game.menu(); };
 
         function resize() {
             const el = document.getElementById('game-stage');
             canvas.width = el.clientWidth;
             canvas.height = el.clientHeight;
-            
-            // FIX: Boundaries check saat resize agar burung tidak hilang
-            if(game.bird.y > canvas.height - 50) {
-                game.bird.y = canvas.height - 200;
-            }
+            if(game.bird.y > canvas.height - 50) game.bird.y = canvas.height - 200;
         }
 
-        // Init
+        // --- EVENT LISTENERS ---
+        window.addEventListener('resize', resize);
+        window.addEventListener('touchstart', inputAction, {passive: false});
+        window.addEventListener('mousedown', inputAction);
+        window.addEventListener('keydown', (e) => { if(e.code === 'Space') inputAction(e); });
+
+        // Handler Tombol (Eksplisit)
+        document.getElementById('btn-start').addEventListener('click', (e) => { 
+            e.stopPropagation(); game.start(); 
+        });
+        document.getElementById('btn-restart').addEventListener('click', (e) => { 
+            e.stopPropagation(); game.start(); 
+        });
+        document.getElementById('btn-menu').addEventListener('click', (e) => { 
+            e.stopPropagation(); game.menu(); 
+        });
+        document.getElementById('btn-voucher-done').addEventListener('click', (e) => { 
+            e.stopPropagation(); game.menu(); 
+        });
+
+        // INIT
         createAssets();
         resize();
         requestAnimationFrame(loop);
