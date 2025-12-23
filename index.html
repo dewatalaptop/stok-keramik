@@ -3,393 +3,402 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Flappy Dolan Sawah - Voucher Edition</title>
+    <title>Flappy Dolan Sawah - Final Fix</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-        /* 1. LAYOUT & RESET */
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        /* RESET & LAYOUT */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; }
         
         body {
             margin: 0; padding: 0;
-            height: 100dvh; /* Dynamic Height untuk Mobile Browser */
-            width: 100vw;
-            background-color: #333;
+            height: 100dvh; width: 100vw;
+            background-color: #222;
             font-family: 'Press Start 2P', cursive;
-            overflow: hidden; 
-            touch-action: none; 
-            user-select: none;
+            overflow: hidden; touch-action: none; 
             display: flex; justify-content: center; align-items: center;
         }
 
-        /* 2. GAME CONTAINER (LANGIT CSS) */
         #game-stage {
             position: relative;
-            width: 100%; max-width: 480px;
-            height: 100%; 
-            /* Optimasi: Langit pakai CSS Gradient agar ringan */
+            width: 100%; max-width: 480px; height: 100%;
             background: linear-gradient(to bottom, #70C5CE 0%, #a4e4ea 100%);
             overflow: hidden;
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            box-shadow: 0 0 40px rgba(0,0,0,0.5);
         }
 
-        canvas { 
-            display: block; 
-            width: 100%; height: 100%;
-            z-index: 1;
-        }
+        canvas { display: block; width: 100%; height: 100%; z-index: 1; }
 
-        /* 3. UI LAYERS */
-        .ui-layer { 
-            position: absolute; width: 100%; pointer-events: none; 
-            z-index: 10; text-align: center; 
-        }
+        /* UI ELEMENTS */
+        .ui-layer { position: absolute; width: 100%; pointer-events: none; z-index: 10; text-align: center; }
         
         #score-display {
-            top: 10%; font-size: 4rem; color: white;
-            -webkit-text-stroke: 2px #000;
-            text-shadow: 4px 4px 0 #000;
+            top: 15%; font-size: 4rem; color: white;
+            -webkit-text-stroke: 2px #000; text-shadow: 4px 4px 0 #000;
         }
 
         .screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(3px); /* Efek Blur Kekinian */
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
             display: flex; flex-direction: column; 
             justify-content: center; align-items: center;
             z-index: 20; display: none;
+            transition: opacity 0.2s;
         }
 
-        /* 4. BUTTON STYLING */
+        /* BUTTONS */
         .btn {
             background: #E86101; border: 2px solid #fff;
             box-shadow: 0 4px 0 #994000; color: white;
-            padding: 15px 25px; font-size: 1rem;
+            padding: 15px 20px; font-size: 0.9rem;
             font-family: inherit; cursor: pointer;
-            border-radius: 8px; margin: 10px;
-            text-transform: uppercase; width: 80%;
-            pointer-events: auto; transition: transform 0.1s;
+            border-radius: 8px; margin: 8px;
+            text-transform: uppercase; width: 80%; max-width: 300px;
+            pointer-events: auto; position: relative; top: 0;
+            transition: all 0.1s;
         }
-        .btn:active { transform: translateY(4px); box-shadow: 0 0 0 #994000; }
+        .btn:active { top: 4px; box-shadow: 0 0 0 #994000; }
         .btn-green { background: #73BF2E; box-shadow: 0 4px 0 #4c8519; }
+        .btn-green:active { box-shadow: 0 0 0 #4c8519; }
 
-        /* 5. VOUCHER DESIGN */
+        /* VOUCHER CARD */
         .voucher-card {
-            background: #fffcf5; 
-            border: 4px dashed #E86101;
+            background: #fffcf5; border: 4px dashed #E86101;
             padding: 20px; width: 90%; max-width: 350px;
-            border-radius: 15px; text-align: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-radius: 12px; text-align: center;
         }
-
-        @keyframes popIn {
-            from { transform: scale(0.5); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-
-        .blink { animation: blinker 1s linear infinite; }
-        @keyframes blinker { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
 
     <div id="game-stage">
         <canvas id="gameCanvas"></canvas>
-        
         <div class="ui-layer" id="score-display">0</div>
 
-        <div id="start-screen" class="screen" style="display: flex;">
-            <h1 style="color: #F4D03F; -webkit-text-stroke: 2px #000; text-shadow: 4px 4px 0 #000; font-size: 2.5rem; text-align: center; line-height: 1.5; margin-bottom: 20px;">
+        <div id="screen-start" class="screen" style="display: flex;">
+            <h1 style="color:#F4D03F; -webkit-text-stroke:2px #000; text-shadow:4px 4px 0 #000; font-size:2.5rem; text-align:center; line-height:1.4; margin-bottom:20px;">
                 DOLAN<br>SAWAH
             </h1>
-            <div style="color:white; font-size:0.7rem; margin-bottom:20px;">Dapatkan Skor <span style="color:#F4D03F; font-weight:bold;">20</span><br>untuk Es Teh Gratis!</div>
-            <button class="btn" onclick="game.start()">MAIN SEKARANG</button>
-        </div>
-
-        <div id="game-over-screen" class="screen">
-            <h2 style="color:white; -webkit-text-stroke: 1px #000; font-size:2rem; margin-bottom:10px;">GAME OVER</h2>
-            <div style="background: #DED895; border: 3px solid #543847; padding: 15px; border-radius: 10px; width: 80%; text-align: center; margin-bottom: 15px;">
-                <div style="font-size:0.8rem; color:#543847;">SKOR KAMU</div>
-                <div id="final-score" style="font-size: 2.5rem; color:#E86101; margin: 5px 0;">0</div>
-                <div style="font-size:0.6rem; color:#555; border-top:1px dashed #543847; padding-top:5px; margin-top:5px;">
-                    Butuh skor 20 untuk Voucher
-                </div>
+            <div style="color:white; font-size:0.7rem; margin-bottom:20px; line-height:1.5; text-align: center;">
+                Target Voucher: <span style="color:#F4D03F; font-weight:bold;">20 Poin</span><br>
+                Tap layar / Spasi untuk terbang
             </div>
-            <button class="btn" onclick="game.start()">COBA LAGI</button>
+            <button class="btn" onclick="game.start()">MULAI MAIN ▶</button>
         </div>
 
-        <div id="voucher-screen" class="screen" style="background: rgba(0,0,0,0.85);">
+        <div id="screen-over" class="screen">
+            <h2 style="color:white; -webkit-text-stroke:2px #000; text-shadow:3px 3px 0 #000; font-size:2rem; margin-bottom:15px;">GAME OVER</h2>
+            
+            <div style="background:#DED895; border:3px solid #543847; padding:15px; border-radius:10px; width:80%; max-width:300px; text-align:center; margin-bottom:15px;">
+                <div style="font-size:0.7rem; color:#543847; margin-bottom:5px;">SKOR KAMU</div>
+                <div id="final-score" style="font-size:2.5rem; color:#E86101;">0</div>
+            </div>
+
+            <button class="btn" onclick="game.start()">COBA LAGI ↺</button>
+            <button class="btn btn-green" onclick="game.menu()">KEMBALI KE MENU 🏠</button>
+        </div>
+
+        <div id="screen-voucher" class="screen">
             <div class="voucher-card">
-                <h2 style="color: #E86101; margin: 0 0 10px 0; font-size: 1.2rem;">🎉 SELAMAT! 🎉</h2>
-                <p style="font-size: 0.6rem; color:#555; margin-bottom: 5px;">Kamu menaklukan sawah!</p>
+                <h2 style="color:#E86101; margin:0 0 10px 0; font-size:1.2rem;">🎉 SELAMAT! 🎉</h2>
+                <div style="background:#eee; padding:8px; border-radius:6px; margin:10px 0; font-size:0.8rem;">
+                    Skor: <span id="voucher-score-val" style="font-weight:bold; color:#E86101;">0</span>
+                </div>
+                <h1 style="font-size:1.8rem; color:#73BF2E; margin:10px 0; -webkit-text-stroke:1px #000;">GRATIS<br>ES TEH</h1>
                 
-                <div style="background: #eee; padding: 8px; border-radius: 6px; margin: 10px 0; font-size: 0.8rem;">
-                    Skor Akhir: <span id="voucher-score-val" style="font-weight: bold; color: #E86101;">0</span>
-                </div>
-
-                <div style="margin: 15px 0;">
-                    <div style="font-size: 0.6rem; color: #555;">Tunjukkan Kasir & Dapat:</div>
-                    <h1 style="font-size: 1.5rem; color: #73BF2E; margin: 5px 0; -webkit-text-stroke: 1px #000;">GRATIS<br>ES TEH</h1>
-                </div>
-
-                <div style="border-top: 2px dashed #ccc; padding-top: 10px; margin-top: 10px;">
-                    <div style="font-size: 0.5rem; color: #888;">KODE VALIDASI:</div>
-                    <div id="voucher-code" style="font-family: monospace; font-size: 1rem; font-weight: bold; letter-spacing: 2px; color:#333; margin: 5px 0;">LOADING...</div>
-                    
-                    <div style="margin-top: 8px; background: #ffeba7; padding: 6px; border-radius: 4px; color: #543847; border: 1px solid #e0c870;">
-                        <div style="font-size: 0.5rem;">Jam Server (Wajib Bergerak):</div>
-                        <div id="live-clock" style="font-weight: bold; font-size: 1rem; margin-top:2px;">00:00:00</div>
+                <div style="border-top:2px dashed #ccc; padding-top:10px; margin-top:10px;">
+                    <div style="font-size:0.6rem; color:#888;">KODE VALIDASI:</div>
+                    <div id="voucher-code" style="font-family:monospace; font-size:1.2rem; font-weight:bold; color:#333; margin:5px 0; letter-spacing:1px;">LOADING...</div>
+                    <div style="background:#ffeba7; padding:5px; border-radius:4px; color:#543847; margin-top:5px; border:1px solid #e0c870;">
+                        <span style="font-size:0.5rem;">Wajib Bergerak:</span><br>
+                        <span id="live-clock" style="font-weight:bold; font-size:1rem;">00:00:00</span>
                     </div>
                 </div>
-
-                <button class="btn btn-green" style="margin-top: 15px; font-size: 0.8rem; padding: 12px; width: 100%;" onclick="location.reload()">KEMBALI KE MENU</button>
+                <button class="btn btn-green" style="margin-top:15px; padding:10px;" onclick="game.menu()">SELESAI</button>
             </div>
         </div>
     </div>
 
     <script>
-        // ==========================================
-        // 1. KONFIGURASI (Bisa Diedit)
-        // ==========================================
+        // --- 1. CONFIG FISIKA ORIGINAL ---
         const CONFIG = {
-            gravity: 0.35,  // Berat burung (makin besar makin cepat jatuh)
-            jump: 6.5,      // Kekuatan lompat
-            speed: 3,       // Kecepatan gerak sawah
-            gap: 125,       // Jarak antar pipa (makin besar makin mudah)
-            voucherTarget: 20 // SKOR MINIMAL UNTUK DAPAT VOUCHER
+            gravity: 0.5,     // Diperberat (sebelumnya 0.35)
+            jump: 8.0,        // Diperkuat (sebelumnya 6.5)
+            speed: 3.5,       // Dipercepat sedikit agar tidak ngantuk
+            gap: 130,         // Jarak pipa
+            voucherTarget: 20 
         };
 
-        // ==========================================
-        // 2. OPTIMIZED ENGINE & ASSETS
-        // ==========================================
         const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d', { alpha: true }); // Alpha true untuk overlay di atas background CSS
+        const ctx = canvas.getContext('2d', { alpha: false }); // Optimasi Rendering
 
-        // PRE-RENDER ASSETS (Teknik Anti-Lag)
-        // Kita menggambar aset ke memori sekali saja, lalu copy-paste saat game jalan.
-        const assets = {
-            bird: document.createElement('canvas'),
-            pipeTop: document.createElement('canvas'),
-            pipeBot: document.createElement('canvas')
-        };
+        // --- 2. ASSETS GENERATOR (PIXEL ART STYLE) ---
+        const assets = { bird: null, pipeTop: null, pipeBot: null };
 
-        function initAssets() {
-            // A. GAMBAR BURUNG (Kuning - Ekor Oranye)
-            assets.bird.width = 38; assets.bird.height = 30;
-            const b = assets.bird.getContext('2d');
-            // Badan
-            b.beginPath(); b.ellipse(19,15,17,13,0,0,Math.PI*2);
-            b.fillStyle="#FFD700"; b.fill(); b.lineWidth=2; b.stroke();
-            // Mata
-            b.beginPath(); b.arc(26,10,5,0,Math.PI*2); b.fillStyle="#FFF"; b.fill(); b.stroke();
-            b.beginPath(); b.arc(28,10,2,0,Math.PI*2); b.fillStyle="#000"; b.fill();
-            // Sayap
-            b.beginPath(); b.ellipse(12,18,8,5,0,0,Math.PI*2); b.fillStyle="#FFF"; b.fill(); b.stroke();
-            // Paruh
-            b.beginPath(); b.moveTo(28,18); b.lineTo(38,22); b.lineTo(28,26); b.fillStyle="#E86101"; b.fill(); b.stroke();
-
-            // B. GAMBAR PIPA (Tema Sawah Hijau)
-            const w = 56, h = 600; // Tinggi pipa dimaximalkan
-            assets.pipeTop.width = w; assets.pipeTop.height = h;
-            assets.pipeBot.width = w; assets.pipeBot.height = h;
+        function createAssets() {
+            // A. BURUNG (Bentuk lebih detail & tegas)
+            const cB = document.createElement('canvas');
+            cB.width = 44; cB.height = 32;
+            const b = cB.getContext('2d');
             
-            const pt = assets.pipeTop.getContext('2d');
-            const pb = assets.pipeBot.getContext('2d');
-
-            // Style Pipa Hijau
-            [pt, pb].forEach(c => {
-                c.fillStyle="#73BF2E"; c.fillRect(2,0,w-4,h);
-                c.strokeStyle="#000"; c.lineWidth=2; c.strokeRect(2,0,w-4,h);
-                // Highlight
-                c.fillStyle="#8CD645"; c.fillRect(6,0,6,h); 
-                c.fillStyle="#558F22"; c.fillRect(w-10,0,4,h); 
-            });
-
-            // Kepala Pipa (Top) - Di bawah
-            pt.fillStyle="#73BF2E"; pt.fillRect(0,h-30,w,30); pt.strokeRect(0,h-30,w,30);
+            // Outline Hitam (Bikin grafik tajam)
+            b.fillStyle = "#000";
+            b.beginPath(); b.ellipse(22,16,21,15,0,0,Math.PI*2); b.fill();
             
-            // Kepala Pipa (Bot) - Di atas
-            pb.fillStyle="#73BF2E"; pb.fillRect(0,0,w,30); pb.strokeRect(0,0,w,30);
+            // Body Kuning
+            b.fillStyle = "#FFD700";
+            b.beginPath(); b.ellipse(22,16,19,13,0,0,Math.PI*2); b.fill();
+            
+            // Mata Besar
+            b.fillStyle = "#FFF"; b.beginPath(); b.arc(30,10,8,0,Math.PI*2); b.fill(); b.stroke();
+            b.fillStyle = "#000"; b.beginPath(); b.arc(32,10,3,0,Math.PI*2); b.fill();
+            
+            // Sayap Putih
+            b.fillStyle = "#FFF"; b.beginPath(); b.ellipse(14,20,10,6,0,0,Math.PI*2); b.fill(); b.stroke();
+            
+            // Paruh Oranye
+            b.fillStyle = "#E86101"; b.beginPath(); b.moveTo(32,18); b.lineTo(44,24); b.lineTo(32,30); b.fill(); b.stroke();
+            
+            assets.bird = cB;
+
+            // B. PIPA (Style Mario Klasik dengan Outline Tebal)
+            const w = 64, h = 800; // Lebih lebar sedikit biar gagah
+            const cPT = document.createElement('canvas'); cPT.width = w; cPT.height = h;
+            const cPB = document.createElement('canvas'); cPB.width = w; cPB.height = h;
+            const pt = cPT.getContext('2d');
+            const pb = cPB.getContext('2d');
+
+            function drawPipe(c, isTop) {
+                // Batang Pipa
+                c.fillStyle = "#73BF2E"; c.fillRect(4, 0, w-8, h);
+                c.lineWidth = 4; c.strokeStyle = "#000"; c.strokeRect(4, 0, w-8, h);
+                
+                // Highlight & Shadow (Efek 3D)
+                c.fillStyle = "rgba(255,255,255,0.2)"; c.fillRect(8, 0, 8, h);
+                c.fillStyle = "rgba(0,0,0,0.1)"; c.fillRect(w-16, 0, 8, h);
+
+                // Kepala Pipa
+                let capY = isTop ? h - 40 : 0;
+                c.fillStyle = "#73BF2E"; c.fillRect(0, capY, w, 40);
+                c.strokeRect(0, capY, w, 40);
+                // Detail Kepala
+                c.fillStyle = "rgba(255,255,255,0.2)"; c.fillRect(4, capY, 8, 40);
+            }
+
+            drawPipe(pt, true);
+            drawPipe(pb, false);
+            assets.pipeTop = cPT;
+            assets.pipeBot = cPB;
         }
 
-        // ==========================================
-        // 3. GAME LOGIC
-        // ==========================================
+        // --- 3. GAME ENGINE & STATE MANAGEMENT ---
         const game = {
-            running: false, score: 0, frames: 0,
-            bird: { y: 0, v: 0 },
+            state: 'START', // START, PLAY, OVER, VOUCHER
+            frames: 0, score: 0,
+            bird: { y: 0, v: 0, rot: 0 },
             pipes: [],
             
+            // Reset & Start Game
             start: function() {
-                // Resize Canvas agar tajam di HP
-                const container = document.getElementById('game-stage');
-                canvas.width = container.clientWidth;
-                canvas.height = container.clientHeight;
-
+                resize(); // Pastikan ukuran layar pas
+                this.state = 'PLAY';
                 this.bird.y = canvas.height / 2;
                 this.bird.v = 0;
+                this.bird.rot = 0;
                 this.pipes = [];
                 this.score = 0;
                 this.frames = 0;
-                this.running = true;
-
-                document.getElementById('score-display').innerText = 0;
-                document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
                 
-                initAssets();
-                requestAnimationFrame(loop);
+                document.getElementById('score-display').innerText = 0;
+                this.showScreen(null); // Sembunyikan semua layar menu
+                
+                // Mulai Loop jika belum jalan
+                if(!this.loopRunning) {
+                    this.loopRunning = true;
+                    requestAnimationFrame(loop);
+                }
             },
 
+            // Kembali ke Menu Utama (Tanpa Reload)
+            menu: function() {
+                this.state = 'START';
+                this.showScreen('screen-start');
+            },
+
+            // Game Over Logic
             over: function() {
-                this.running = false;
+                this.state = 'OVER';
                 
-                // Cek apakah dapat voucher?
                 if(this.score >= CONFIG.voucherTarget) {
-                    showVoucher(this.score);
+                    this.showScreen('screen-voucher');
+                    this.generateVoucher();
                 } else {
                     document.getElementById('final-score').innerText = this.score;
-                    document.getElementById('game-over-screen').style.display = 'flex';
+                    this.showScreen('screen-over');
                 }
+            },
+
+            // Helper: Switch Layar
+            showScreen: function(id) {
+                document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+                if(id) document.getElementById(id).style.display = 'flex';
+            },
+
+            generateVoucher: function() {
+                document.getElementById('voucher-score-val').innerText = this.score;
+                const d = new Date();
+                const code = `DS-${d.getDate()}${d.getMonth()+1}-${Math.floor(Math.random()*9000)+1000}`;
+                document.getElementById('voucher-code').innerText = code;
+                
+                if(this.clockInt) clearInterval(this.clockInt);
+                this.clockInt = setInterval(() => {
+                    document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('id-ID');
+                }, 1000);
             }
         };
 
+        // --- 4. MAIN LOOP ---
         function loop() {
-            if(!game.running) return;
+            // Logic Update (Hanya jalan saat Play)
+            if(game.state === 'PLAY') {
+                updatePhysics();
+            }
+            // Rendering (Selalu jalan agar tidak blank)
+            draw();
+            requestAnimationFrame(loop);
+        }
 
-            // 1. Bersihkan Canvas (Transparan, Background pakai CSS)
-            ctx.clearRect(0,0,canvas.width,canvas.height);
+        function updatePhysics() {
+            game.frames++;
 
-            // 2. Physics Burung
+            // 1. Bird Physics (Original Gravity Feel)
             game.bird.v += CONFIG.gravity;
             game.bird.y += game.bird.v;
+            
+            // Rotasi Burung (Nunduk saat jatuh)
+            game.bird.rot = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (game.bird.v * 0.1)));
 
-            // 3. Logic Pipa
-            game.frames++;
-            if(game.frames % 100 === 0) { // Spawn rate
-                let min = 80;
-                let max = canvas.height - 112 - CONFIG.gap - 80;
-                // Safety check
-                if(max < min) max = min + 20; 
-
+            // 2. Pipe Spawning
+            if(game.frames % 90 === 0) {
+                let safe = 100;
+                let min = safe;
+                let max = canvas.height - 112 - CONFIG.gap - safe;
                 let h = Math.floor(Math.random() * (max - min + 1) + min);
                 game.pipes.push({ x: canvas.width, topH: h, passed: false });
             }
 
-            // 4. Draw & Collision
-            const birdX = 60;
-            const birdSize = 14; // Radius hitbox (agak kecil biar forgiving)
-            
-            // Draw Ground (Lantai)
-            const groundY = canvas.height - 50;
+            // 3. Pipe Collision & Score
+            const bX = 60; // Posisi X burung
+            const bRad = 16; // Radius hitbox
 
             for(let i = 0; i < game.pipes.length; i++) {
                 let p = game.pipes[i];
                 p.x -= CONFIG.speed;
 
-                // Draw Pipa Atas (Ambil bagian bawah gambar aset)
-                ctx.drawImage(assets.pipeTop, p.x, p.topH - 600); 
-                // Draw Pipa Bawah
-                ctx.drawImage(assets.pipeBot, p.x, p.topH + CONFIG.gap);
-
-                // Collision Logic (Sederhana & Efisien)
-                if ( birdX + birdSize > p.x && birdX - birdSize < p.x + 52 ) {
-                    if ( game.bird.y - birdSize < p.topH || game.bird.y + birdSize > p.topH + CONFIG.gap ) {
+                // Hitbox Check
+                if(bX + bRad > p.x + 4 && bX - bRad < p.x + 60) {
+                    if(game.bird.y - bRad < p.topH || game.bird.y + bRad > p.topH + CONFIG.gap) {
                         game.over();
                     }
                 }
 
-                // Score Logic
-                if(p.x + 52 < birdX && !p.passed) {
+                // Score Check
+                if(p.x + 64 < bX && !p.passed) {
                     game.score++;
                     document.getElementById('score-display').innerText = game.score;
                     p.passed = true;
                 }
 
-                // Cleanup Pipa
-                if(p.x < -60) { game.pipes.shift(); i--; }
+                // Hapus pipa lewat
+                if(p.x < -70) { game.pipes.shift(); i--; }
             }
 
-            // Draw Burung (Dengan Rotasi)
-            ctx.save();
-            ctx.translate(birdX, game.bird.y);
-            let rot = Math.min(Math.PI/4, Math.max(-Math.PI/4, game.bird.v * 0.1));
-            ctx.rotate(rot);
-            ctx.drawImage(assets.bird, -19, -15);
-            ctx.restore();
-
-            // Draw Ground Moving
-            let offset = (game.frames * CONFIG.speed) % 20;
-            ctx.fillStyle = "#DED895";
-            ctx.fillRect(0, groundY, canvas.width, 50);
-            ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(canvas.width, groundY); 
-            ctx.strokeStyle="#543847"; ctx.lineWidth=3; ctx.stroke();
-            
-            // Rumput Parallax
-            ctx.fillStyle="#73BF2E"; ctx.fillRect(0,groundY,canvas.width,10);
-            ctx.fillStyle="#558F22";
-            for(let k = -offset; k < canvas.width; k+=20) {
-                ctx.fillRect(k, groundY, 10, 10);
+            // 4. Ground Collision
+            let groundY = canvas.height - 50;
+            if(game.bird.y >= groundY - 15) {
+                game.bird.y = groundY - 15;
+                game.over();
             }
-
-            // Cek Mati Jatuh / Terbang Ke Langit
-            if(game.bird.y >= groundY - 10 || game.bird.y < 0) game.over();
-
-            requestAnimationFrame(loop);
+            // Ceiling Collision
+            if(game.bird.y < 0) {
+                game.bird.y = 0;
+                game.bird.v = 0;
+            }
         }
 
-        // ==========================================
-        // 4. INPUT HANDLING (RESPONSIF)
-        // ==========================================
-        function flap(e) {
-            // Mencegah zoom double tap & scroll
-            if(e.type !== 'keydown') { 
-               if(e.cancelable) e.preventDefault(); 
-            }
+        function draw() {
+            // Bersihkan Layar
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            if(game.running) {
+            // Draw Pipes
+            for(let p of game.pipes) {
+                // Pipa Atas
+                ctx.drawImage(assets.pipeTop, p.x, p.topH - 800);
+                // Pipa Bawah
+                ctx.drawImage(assets.pipeBot, p.x, p.topH + CONFIG.gap);
+            }
+
+            // Draw Ground (Lantai Bergerak)
+            let groundY = canvas.height - 50;
+            let offset = (game.frames * CONFIG.speed) % 24;
+            
+            ctx.fillStyle = "#DED895"; ctx.fillRect(0, groundY, canvas.width, 50);
+            ctx.lineWidth = 3; ctx.strokeStyle = "#543847";
+            ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(canvas.width, groundY); ctx.stroke();
+            
+            // Pola Rumput
+            ctx.fillStyle = "#73BF2E";
+            for(let i = -offset; i < canvas.width; i+=24) {
+                ctx.beginPath(); ctx.moveTo(i, groundY); ctx.lineTo(i+12, groundY); ctx.lineTo(i+6, groundY+10); ctx.fill();
+            }
+
+            // Draw Bird (Hanya gambar jika aset sudah siap)
+            if(assets.bird) {
+                ctx.save();
+                // Jika game over, burung jatuh tegak lurus ke bawah
+                let drawY = game.bird.y;
+                let drawRot = game.bird.rot;
+                
+                if(game.state === 'START') {
+                    drawY = canvas.height/2 + Math.sin(Date.now()/300)*10; // Efek melayang
+                    drawRot = 0;
+                }
+
+                ctx.translate(60, drawY);
+                ctx.rotate(drawRot);
+                ctx.drawImage(assets.bird, -22, -16);
+                ctx.restore();
+            }
+        }
+
+        // --- 5. INPUT & RESIZE ---
+        function inputAction(e) {
+            if(e.type !== 'keydown') { if(e.cancelable) e.preventDefault(); }
+            
+            if(game.state === 'PLAY') {
                 game.bird.v = -CONFIG.jump;
-            } else {
-                // Jika di start screen, tap langsung mulai
-                const startSc = document.getElementById('start-screen');
-                if(startSc.style.display !== 'none') game.start();
+            } else if (game.state === 'START') {
+                game.start();
             }
         }
-        
-        // Listener Passive: False (Wajib untuk Chrome Mobile baru agar tidak lag)
-        window.addEventListener('touchstart', flap, {passive: false});
-        window.addEventListener('mousedown', flap);
-        window.addEventListener('keydown', (e) => { 
-            if(e.code === 'Space') flap(e); 
-        });
 
-        // ==========================================
-        // 5. VOUCHER SYSTEM
-        // ==========================================
-        function showVoucher(score) {
-            const vScreen = document.getElementById('voucher-screen');
-            vScreen.style.display = 'flex';
-            document.getElementById('voucher-score-val').innerText = score;
-            
-            // Generator Kode Unik (DS + Tanggal + Huruf Acak)
-            const d = new Date();
-            const dateStr = `${d.getDate()}${d.getMonth()+1}`;
-            const rand = Math.random().toString(36).substring(2,6).toUpperCase();
-            document.getElementById('voucher-code').innerText = `DS-${dateStr}-${rand}`;
-
-            // Jam Digital (Anti Screenshot)
-            if(window.clockInterval) clearInterval(window.clockInterval);
-            
-            window.clockInterval = setInterval(() => {
-                const now = new Date();
-                // Format HH:MM:SS
-                const timeStr = now.toLocaleTimeString('id-ID', { hour12: false });
-                document.getElementById('live-clock').innerText = timeStr;
-            }, 1000);
+        window.addEventListener('resize', resize);
+        function resize() {
+            const el = document.getElementById('game-stage');
+            canvas.width = el.clientWidth;
+            canvas.height = el.clientHeight;
         }
 
-        // Init Assets pertama kali
-        initAssets();
+        window.addEventListener('touchstart', inputAction, {passive: false});
+        window.addEventListener('mousedown', inputAction);
+        window.addEventListener('keydown', (e) => { if(e.code === 'Space') inputAction(e); });
+
+        // Init
+        createAssets();
+        resize();
+        game.loopRunning = true;
+        requestAnimationFrame(loop);
+
     </script>
 </body>
 </html>
