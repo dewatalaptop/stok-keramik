@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Wing Tap - Ultimate</title>
+    <title>Wing Tap - Remastered</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -11,7 +11,7 @@
         body {
             margin: 0; padding: 0;
             height: 100dvh; width: 100vw;
-            background-color: #222;
+            background-color: #333;
             font-family: 'Press Start 2P', cursive;
             overflow: hidden; touch-action: none; 
             display: flex; justify-content: center; align-items: center;
@@ -21,9 +21,8 @@
             position: relative;
             width: 100%; max-width: 480px; height: 100%;
             overflow: hidden;
-            box-shadow: 0 0 40px rgba(0,0,0,0.5);
-            /* Background akan dihandle oleh Canvas */
-            background: #333; 
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            background: #4ec0ca; /* Warna Langit Klasik */
         }
 
         canvas { 
@@ -31,61 +30,73 @@
             image-rendering: pixelated; 
         }
 
-        /* UI ELEMENTS */
-        .ui-layer { position: absolute; width: 100%; pointer-events: none; z-index: 10; text-align: center; }
+        /* UI LAYERS */
+        .ui-layer { position: absolute; width: 100%; pointer-events: none; z-index: 50; text-align: center; }
         
         #score-display {
-            top: 10%; font-size: 3rem; color: white;
-            -webkit-text-stroke: 2px #000; text-shadow: 4px 4px 0 #000;
+            top: 10%; font-size: 3.5rem; color: white;
+            -webkit-text-stroke: 3px #000; text-shadow: 4px 4px 0 #000;
         }
 
         .screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(2px);
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(2px);
             display: flex; flex-direction: column; 
             justify-content: center; align-items: center;
-            z-index: 20; display: none;
+            z-index: 60; display: none;
         }
 
         /* USER PROFILE */
         #user-info {
-            position: absolute; top: 10px; left: 10px; z-index: 30;
+            position: absolute; top: 15px; left: 15px; z-index: 70;
             display: flex; align-items: center; gap: 10px;
-            background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 20px;
-            pointer-events: auto; display: none; /* Hidden default */
+            background: rgba(255,255,255,0.9); padding: 6px 12px; border-radius: 25px;
+            border: 2px solid #000; box-shadow: 2px 2px 0 #000;
+            pointer-events: auto; display: none;
         }
-        #user-avatar { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; }
-        #user-name { color: #fff; font-size: 0.6rem; max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #user-avatar { width: 28px; height: 28px; border-radius: 50%; border: 1px solid #000; }
+        #user-name { color: #000; font-size: 0.6rem; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #loc-badge { font-size: 0.5rem; color: #555; display: block; margin-top: 2px; }
 
         /* BUTTONS */
         .btn {
-            background: #FF6B6B; border: 2px solid #fff;
-            box-shadow: 0 4px 0 #c92a2a; color: white;
-            padding: 12px 15px; font-size: 0.8rem;
+            background: #E86101; border: 2px solid #fff;
+            box-shadow: 0 4px 0 #000; color: white;
+            padding: 14px 20px; font-size: 0.8rem;
             font-family: inherit; cursor: pointer;
             border-radius: 8px; margin: 8px;
-            text-transform: uppercase; width: 80%; max-width: 300px;
+            text-transform: uppercase; width: 85%; max-width: 280px;
             pointer-events: auto; position: relative;
         }
-        .btn:active { top: 4px; box-shadow: 0 0 0 #c92a2a; transform: scale(0.98); }
-        .btn-google { background: #4285F4; box-shadow: 0 4px 0 #0d47a1; }
-        .btn-google:active { box-shadow: 0 0 0 #0d47a1; }
+        .btn:active { top: 4px; box-shadow: 0 0 0 #000; transform: scale(0.98); }
+        .btn-google { background: #4285F4; border-color: #fff; }
         .btn-green { background: #51CF66; box-shadow: 0 4px 0 #2b8a3e; }
 
-        /* LEADERBOARD */
+        /* LEADERBOARD TABS */
+        .lb-container {
+            width: 90%; max-width: 320px; background: #ded895;
+            border: 4px solid #543847; border-radius: 10px;
+            padding: 10px; margin-bottom: 15px; pointer-events: auto;
+        }
+        .tabs { display: flex; gap: 5px; margin-bottom: 10px; }
+        .tab {
+            flex: 1; padding: 8px; font-size: 0.6rem; cursor: pointer;
+            background: #e9af60; border: 2px solid #543847; color: #543847;
+            text-align: center;
+        }
+        .tab.active { background: #E86101; color: white; border-color: #fff; }
+
         #lb-list {
-            width: 90%; max-width: 320px; height: 200px; overflow-y: auto;
-            background: #fff; border: 4px solid #333; border-radius: 8px;
-            padding: 5px; margin-bottom: 15px; pointer-events: auto;
+            height: 160px; overflow-y: auto; background: #fff;
+            border: 2px solid #543847; padding: 5px;
         }
         .lb-row {
-            display: flex; justify-content: space-between; padding: 8px;
+            display: flex; justify-content: space-between; padding: 6px;
             border-bottom: 1px dashed #ccc; font-size: 0.6rem; color: #333;
         }
-        .lb-row:nth-child(1) { background: #fff3cd; font-weight: bold; }
-        
-        .loading { color: #fff; font-size: 0.6rem; margin-top: 10px; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0.5; } }
+        .lb-row:nth-child(1) { background: #fff5cc; font-weight: bold; color: #d35400; }
+        .lb-city { font-size: 0.5rem; color: #888; margin-left: 5px; }
+
     </style>
 </head>
 <body>
@@ -96,40 +107,49 @@
         
         <div id="user-info">
             <img id="user-avatar" src="" alt="">
-            <span id="user-name">Player</span>
+            <div>
+                <div id="user-name">Player</div>
+                <div id="loc-badge">📍 Mencari Lokasi...</div>
+            </div>
         </div>
 
         <div id="screen-start" class="screen" style="display: flex;">
-            <h1 style="color:#FFD43B; -webkit-text-stroke:2px #000; text-shadow:4px 4px 0 #000; font-size:2.5rem; text-align:center; margin-bottom:20px;">
-                WING<br>TAP
+            <h1 style="color:#E86101; -webkit-text-stroke:2px #fff; text-shadow:4px 4px 0 #000; font-size:2.8rem; text-align:center; margin-bottom:10px; line-height: 1.2;">
+                FLAPPY<br>WING
             </h1>
             
-            <div id="login-section">
-                <p style="color:#eee; font-size:0.6rem; margin-bottom:10px; text-align:center;">Login untuk Leaderboard Otomatis</p>
-                <button class="btn btn-google" id="btn-login">G Login Google</button>
+            <div id="login-section" style="width:100%; text-align:center;">
+                <p style="color:#fff; font-size:0.6rem; margin-bottom:15px; text-shadow: 2px 2px 0 #000;">Login untuk Simpan Skor</p>
+                <button class="btn btn-google" id="btn-login">🔑 Login Google</button>
+                <br>
+                <button class="btn btn-green" id="btn-guest">Main Tanpa Login</button>
             </div>
             
             <div id="play-section" style="display:none; text-align:center; width: 100%;">
-                <p style="color:#a5d8ff; font-size:0.6rem; margin-bottom:10px;">Halo, <span id="welcome-name">Player</span>!</p>
-                <button class="btn btn-green" id="btn-start">MULAI MAIN ▶</button>
-                <button class="btn" id="btn-logout" style="background:#555; box-shadow: 0 4px 0 #222; font-size:0.6rem; width:auto;">Logout</button>
+                <button class="btn btn-green" id="btn-start" style="font-size: 1rem;">START ▶</button>
+                <button class="btn" id="btn-logout" style="background:#555; width:auto; font-size:0.6rem; padding: 10px;">Logout</button>
             </div>
         </div>
 
         <div id="screen-over" class="screen">
-            <h2 style="color:white; -webkit-text-stroke:2px #000; font-size:1.5rem; margin-bottom:10px;">GAME OVER</h2>
-            <div style="background:#FFD43B; border:3px solid #000; padding:10px; border-radius:8px; width:60%; text-align:center; margin-bottom:15px;">
-                <div style="font-size:0.6rem; color:#000;">SKOR</div>
-                <div id="final-score" style="font-size:2rem; color:#c92a2a;">0</div>
+            <h2 style="color:#E86101; -webkit-text-stroke:2px #fff; text-shadow:3px 3px 0 #000; font-size:2rem; margin-bottom:15px;">GAME OVER</h2>
+            
+            <div style="background:#ded895; border:3px solid #543847; padding:10px; border-radius:8px; width:120px; text-align:center; margin-bottom:15px; box-shadow: 4px 4px 0 #000;">
+                <div style="font-size:0.6rem; color:#E86101;">SKOR</div>
+                <div id="final-score" style="font-size:2rem; color:#fff; -webkit-text-stroke:1px #000;">0</div>
             </div>
 
-            <div id="lb-status" class="loading" style="display:none;">Menyimpan Skor...</div>
-
-            <div id="lb-list">
-                <div style="text-align:center; padding:20px; font-size:0.6rem; color:#888;">Memuat Leaderboard...</div>
+            <div class="lb-container">
+                <div class="tabs">
+                    <div class="tab active" id="tab-global">GLOBAL</div>
+                    <div class="tab" id="tab-local">LOKAL</div>
+                </div>
+                <div id="lb-list">
+                    <div style="text-align:center; padding:20px; font-size:0.6rem; color:#888;">Memuat...</div>
+                </div>
             </div>
             
-            <button class="btn" id="btn-restart">MAIN LAGI ↺</button>
+            <button class="btn btn-green" id="btn-restart">MAIN LAGI ↺</button>
         </div>
     </div>
 
@@ -137,12 +157,11 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } 
                from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot } 
+        import { getFirestore, collection, addDoc, query, orderBy, limit, where, onSnapshot } 
                from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-        // --- KONFIGURASI FIREBASE ---
         const firebaseConfig = {
-            apiKey: "AIzaSyDH6cBMyBCNdzG_tdJNs28AZZIm8HnO8l4", // API KEY ANDA
+            apiKey: "AIzaSyDH6cBMyBCNdzG_tdJNs28AZZIm8HnO8l4",
             authDomain: "flytap-ca3ee.firebaseapp.com",
             projectId: "flytap-ca3ee",
             storageBucket: "flytap-ca3ee.firebasestorage.app",
@@ -156,58 +175,89 @@
         const provider = new GoogleAuthProvider();
 
         let currentUser = null;
+        let playerCity = "Unknown";
+        let lbMode = 'global';
+        let unsubscribe = null;
 
-        // --- AUTH LOGIC ---
-        const btnLogin = document.getElementById('btn-login');
-        const btnLogout = document.getElementById('btn-logout');
-        const loginSec = document.getElementById('login-section');
-        const playSec = document.getElementById('play-section');
-        const userInfo = document.getElementById('user-info');
+        // --- LOCATION DETECTION ---
+        async function detectLocation() {
+            try {
+                const res = await fetch('https://ipapi.co/json/');
+                const data = await res.json();
+                if(data.city) {
+                    playerCity = data.city;
+                    document.getElementById('loc-badge').innerText = `📍 ${playerCity}`;
+                }
+            } catch(e) {
+                console.log("Loc fail");
+            }
+        }
+        detectLocation();
 
-        // Cek Status Login
+        // --- AUTH ---
+        const uiLogin = document.getElementById('login-section');
+        const uiPlay = document.getElementById('play-section');
+        const uiInfo = document.getElementById('user-info');
+
         onAuthStateChanged(auth, (user) => {
+            currentUser = user;
             if (user) {
-                // User Login
-                currentUser = user;
-                loginSec.style.display = 'none';
-                playSec.style.display = 'block';
-                userInfo.style.display = 'flex';
-                
-                document.getElementById('welcome-name').innerText = user.displayName.split(' ')[0];
+                uiLogin.style.display = 'none';
+                uiPlay.style.display = 'block';
+                uiInfo.style.display = 'flex';
                 document.getElementById('user-name').innerText = user.displayName;
                 document.getElementById('user-avatar').src = user.photoURL;
-                
-                // Load Leaderboard Global saat login sukses
                 loadLeaderboard();
             } else {
-                // User Logout
-                currentUser = null;
-                loginSec.style.display = 'block';
-                playSec.style.display = 'none';
-                userInfo.style.display = 'none';
+                uiLogin.style.display = 'block';
+                uiPlay.style.display = 'none';
+                uiInfo.style.display = 'none';
             }
         });
 
-        btnLogin.onclick = async () => {
-            try {
-                await signInWithPopup(auth, provider);
-            } catch (error) {
-                alert("Login Gagal: " + error.message);
-            }
+        document.getElementById('btn-login').onclick = () => signInWithPopup(auth, provider);
+        document.getElementById('btn-logout').onclick = () => signOut(auth);
+        document.getElementById('btn-guest').onclick = () => {
+            uiLogin.style.display = 'none';
+            uiPlay.style.display = 'block';
         };
 
-        btnLogout.onclick = () => signOut(auth);
-
-        // --- LEADERBOARD LOGIC ---
+        // --- LEADERBOARD ---
         const lbList = document.getElementById('lb-list');
-        const lbStatus = document.getElementById('lb-status');
+        const tabGlobal = document.getElementById('tab-global');
+        const tabLocal = document.getElementById('tab-local');
+
+        function switchTab(mode) {
+            lbMode = mode;
+            if(mode === 'global') {
+                tabGlobal.classList.add('active'); tabLocal.classList.remove('active');
+            } else {
+                tabGlobal.classList.remove('active'); tabLocal.classList.add('active');
+            }
+            loadLeaderboard();
+        }
+
+        tabGlobal.onclick = () => switchTab('global');
+        tabLocal.onclick = () => switchTab('local');
 
         function loadLeaderboard() {
-            const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(10));
-            onSnapshot(q, (snapshot) => {
+            if(unsubscribe) unsubscribe();
+            lbList.innerHTML = '<div style="text-align:center; padding:20px; font-size:0.6rem;">Memuat...</div>';
+
+            let q;
+            const ref = collection(db, "leaderboard");
+
+            if (lbMode === 'local') {
+                // Menggunakan Index yang sudah Anda buat sebelumnya
+                q = query(ref, where("city", "==", playerCity), orderBy("score", "desc"), limit(10));
+            } else {
+                q = query(ref, orderBy("score", "desc"), limit(10));
+            }
+
+            unsubscribe = onSnapshot(q, (snapshot) => {
                 lbList.innerHTML = "";
                 if(snapshot.empty) {
-                    lbList.innerHTML = '<div style="text-align:center; padding:20px; font-size:0.6rem;">Belum ada skor.</div>';
+                    lbList.innerHTML = `<div style="text-align:center; padding:20px; font-size:0.6rem;">Belum ada skor ${lbMode === 'local' ? 'di ' + playerCity : ''}.</div>`;
                     return;
                 }
                 let rank = 1;
@@ -216,10 +266,14 @@
                     const isMe = currentUser && d.uid === currentUser.uid;
                     const row = document.createElement('div');
                     row.className = 'lb-row';
-                    if(isMe) row.style.background = "#dbe4ff"; // Highlight user sendiri
+                    if(isMe) row.style.background = "#dbe4ff";
+                    
+                    let locTag = lbMode === 'global' ? `<span class="lb-city">(${d.city||'?'})</span>` : '';
                     
                     row.innerHTML = `
-                        <span style="flex:1">#${rank} ${d.name.substring(0, 15)}</span>
+                        <span style="flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
+                            #${rank} ${d.name} ${locTag}
+                        </span>
                         <span style="font-weight:bold; color:#E86101;">${d.score}</span>
                     `;
                     lbList.appendChild(row);
@@ -228,118 +282,126 @@
             });
         }
 
-        // Auto Save Score
+        // SAVE SCORE
         window.saveScore = async (score) => {
             if (!currentUser || score === 0) return;
-            
-            lbStatus.style.display = 'block';
-            lbStatus.innerText = "Menyimpan ke Leaderboard...";
-            
             try {
                 await addDoc(collection(db, "leaderboard"), {
                     name: currentUser.displayName,
                     uid: currentUser.uid,
                     photo: currentUser.photoURL,
                     score: score,
+                    city: playerCity,
                     timestamp: new Date()
                 });
-                lbStatus.innerText = "Tersimpan ✅";
-                setTimeout(() => lbStatus.style.display = 'none', 2000);
-            } catch (e) {
-                console.error(e);
-                lbStatus.innerText = "Gagal Simpan ❌";
-            }
+                console.log("Score Saved");
+            } catch (e) { console.error(e); }
         };
     </script>
 
     <script>
-        // --- GAME ENGINE & ASSETS ---
+        // --- GAME ENGINE & GENERATIVE ART ---
         
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
 
-        // CONFIG (Proporsi Flappy Bird Style)
+        // CONFIG (Proporsi Flappy Asli)
         const CONFIG = {
-            gravity: 1200, 
-            jump: 350, 
-            speed: 160, 
-            gap: 130, // Celah pipa sedikit lebih sempit
-            pipeWidth: 52 
+            gravity: 1100,
+            jump: 320,
+            speed: 150,
+            gap: 105, // Celah lebih sempit (harder)
+            pipeW: 52 // Lebar pipa standar flappy
         };
 
-        // --- ASSETS GENERATOR (Menggambar manual agar tidak perlu load gambar luar) ---
-        const assets = { bird: null, pipeTop: null, pipeBot: null, cloud: null, mountain: null };
+        // --- ASSET GENERATOR (CANVAS DRAWING) ---
+        // Kita gambar asset sekali ke memory canvas agar performa ringan
+        const assets = {};
 
-        function createAssets() {
-            // 1. BURUNG (Kecil & Bulat)
-            const cB = document.createElement('canvas'); cB.width = 32; cB.height = 24;
-            const b = cB.getContext('2d');
-            // Badan
-            b.fillStyle = "#FFD700"; b.beginPath(); b.ellipse(16,12, 14, 10, 0, 0, Math.PI*2); b.fill(); b.stroke();
-            // Mata
-            b.fillStyle = "#fff"; b.beginPath(); b.arc(22, 8, 5, 0, Math.PI*2); b.fill(); b.stroke();
-            b.fillStyle = "#000"; b.beginPath(); b.arc(24, 8, 2, 0, Math.PI*2); b.fill();
-            // Sayap
-            b.fillStyle = "#fff"; b.beginPath(); b.ellipse(12, 14, 8, 5, 0, 0, Math.PI*2); b.fill(); b.stroke();
-            // Paruh
-            b.fillStyle = "#ff6b6b"; b.beginPath(); b.moveTo(24,12); b.lineTo(32,16); b.lineTo(24,20); b.fill(); b.stroke();
-            assets.bird = cB;
+        function initAssets() {
+            // 1. BURUNG (Kecil, pixelated)
+            const cB = createAssetCanvas(34, 24);
+            const b = cB.ctx;
+            // Pixel Art Manual
+            b.fillStyle = "#F4ce42"; b.fillRect(4,4,20,14); // Body
+            b.fillStyle = "#fff"; b.fillRect(4,10,14,8); // Wing area
+            b.fillStyle = "#fff"; b.fillRect(18,2,10,10); // Eye White
+            b.fillStyle = "#000"; b.fillRect(24,4,4,4); // Pupil
+            b.fillStyle = "#E86101"; b.fillRect(18,14,14,6); // Beak
+            b.lineWidth = 2; b.strokeStyle="#000"; b.strokeRect(4,4,20,14); // Outline kasar
+            assets.bird = cB.cvs;
 
-            // 2. PIPA (Style Mario - Ada Kepala & Gradasi)
-            const w = CONFIG.pipeWidth, h = 800;
-            const cPT = document.createElement('canvas'); cPT.width = w; cPT.height = h;
-            const cPB = document.createElement('canvas'); cPB.width = w; cPB.height = h;
-            const pt = cPT.getContext('2d'); const pb = cPB.getContext('2d');
+            // 2. PIPA (Hijau Klasik dengan Outline Tebal)
+            const cP = createAssetCanvas(CONFIG.pipeW, 600);
+            const p = cP.ctx;
+            // Gradient Hijau
+            const grad = p.createLinearGradient(0,0,CONFIG.pipeW,0);
+            grad.addColorStop(0, "#543847"); // Dark border left
+            grad.addColorStop(0.1, "#73BF2E"); 
+            grad.addColorStop(0.4, "#9CE659"); // Highlight
+            grad.addColorStop(0.8, "#73BF2E"); 
+            grad.addColorStop(1, "#543847"); // Dark border right
+            p.fillStyle = grad;
+            p.fillRect(0,0,CONFIG.pipeW,600);
+            // Border hitam tebal
+            p.lineWidth = 4; p.strokeStyle = "#543847"; p.strokeRect(0,0,CONFIG.pipeW,600);
+            // Cap (Topi Pipa)
+            p.fillStyle = grad; p.fillRect(0,0,CONFIG.pipeW,30);
+            p.strokeRect(0,0,CONFIG.pipeW,30);
+            assets.pipe = cP.cvs;
 
-            function drawPipeArt(c, isTop) {
-                // Warna dasar gradasi
-                let grad = c.createLinearGradient(0,0,w,0);
-                grad.addColorStop(0, "#51CF66");
-                grad.addColorStop(0.5, "#96F2D7"); // Highlight tengah
-                grad.addColorStop(1, "#2F9E44"); // Bayangan pinggir
-                
-                c.fillStyle = grad;
-                c.strokeStyle = "#2b8a3e";
-                c.lineWidth = 2;
-
-                // Batang Pipa
-                c.fillRect(2, 0, w-4, h);
-                c.strokeRect(2, 0, w-4, h);
-
-                // Kepala Pipa
-                let capH = 30;
-                let capY = isTop ? h - capH : 0;
-                
-                c.fillStyle = grad;
-                c.fillRect(0, capY, w, capH);
-                c.strokeRect(0, capY, w, capH);
-                
-                // Detail kilapan
-                c.fillStyle = "rgba(255,255,255,0.3)";
-                c.fillRect(6, 0, 4, h); // Kilap batang
-                c.fillRect(6, capY, 4, capH); // Kilap kepala
+            // 3. TANAH (Ground dengan Pola Miring)
+            const cG = createAssetCanvas(480, 112);
+            const g = cG.ctx;
+            g.fillStyle = "#DED895"; g.fillRect(0,0,480,112);
+            // Garis rumput hijau atas
+            g.fillStyle = "#73BF2E"; g.fillRect(0,0,480,12);
+            g.strokeStyle = "#543847"; g.beginPath(); g.moveTo(0,12); g.lineTo(480,12); g.stroke();
+            // Pola Chevron (Miring)
+            g.fillStyle = "#d0c874";
+            for(let i=0; i<480; i+=20) {
+                g.beginPath(); g.moveTo(i,12); g.lineTo(i+10,112); g.lineTo(i+20,112); g.lineTo(i+10,12); g.fill();
             }
-            drawPipeArt(pt, true); drawPipeArt(pb, false);
-            assets.pipeTop = cPT; assets.pipeBot = cPB;
+            assets.ground = cG.cvs;
 
-            // 3. GUNUNG (Untuk Parallax)
-            const cM = document.createElement('canvas'); cM.width = 400; cM.height = 200;
-            const m = cM.getContext('2d');
-            m.fillStyle = "#868e96"; // Gunung abu
-            m.beginPath(); m.moveTo(0,200); m.lineTo(100,50); m.lineTo(200,200); m.fill();
-            m.fillStyle = "#adb5bd"; // Gunung kedua
-            m.beginPath(); m.moveTo(150,200); m.lineTo(280,80); m.lineTo(400,200); m.fill();
-            // Salju di puncak
-            m.fillStyle = "#fff";
-            m.beginPath(); m.moveTo(100,50); m.lineTo(120,80); m.lineTo(80,80); m.fill();
-            assets.mountain = cM;
+            // 4. KOTA (Cityscape Background - Parallax)
+            const cC = createAssetCanvas(480, 250);
+            const c = cC.ctx;
+            // Gambar gedung acak
+            let x = 0;
+            while(x < 480) {
+                let w = 30 + Math.random()*40;
+                let h = 80 + Math.random()*100;
+                // Gedung Hijau/Teal kusam
+                c.fillStyle = Math.random() > 0.5 ? "#a3cfa3" : "#8ebf8e";
+                c.fillRect(x, 250-h, w, h);
+                // Jendela
+                c.fillStyle = "#6ca86c";
+                for(let j=250-h+10; j<250; j+=15) {
+                    c.fillRect(x+5, j, w-10, 8);
+                }
+                x += w;
+            }
+            assets.city = cC.cvs;
 
-            // 4. AWAN
-            const cC = document.createElement('canvas'); cC.width = 60; cC.height = 40;
-            const cl = cC.getContext('2d');
-            cl.fillStyle = "rgba(255,255,255,0.8)";
-            cl.beginPath(); cl.arc(20,20,15,0,Math.PI*2); cl.arc(40,20,18,0,Math.PI*2); cl.arc(30,10,15,0,Math.PI*2); cl.fill();
-            assets.cloud = cC;
+            // 5. SEMAK (Bushes)
+            const cS = createAssetCanvas(480, 60);
+            const s = cS.ctx;
+            s.fillStyle = "#9CE659"; // Hijau terang
+            for(let i=0; i<10; i++) {
+                let r = 30 + Math.random()*20;
+                let bx = Math.random()*480;
+                s.beginPath(); s.arc(bx, 60, r, Math.PI, 0); s.fill();
+                // Outline
+                s.lineWidth = 2; s.strokeStyle="#73BF2E"; s.stroke();
+            }
+            assets.bush = cS.cvs;
+        }
+
+        function createAssetCanvas(w, h) {
+            const c = document.createElement('canvas');
+            c.width = w; c.height = h;
+            return { cvs: c, ctx: c.getContext('2d') };
         }
 
         // --- GAME LOGIC ---
@@ -347,31 +409,22 @@
             state: 'START', score: 0,
             bird: { y: 0, v: 0, rot: 0 },
             pipes: [],
-            bgOffset: 0, // Untuk parallax gunung
-            cloudOffset: 0, // Untuk parallax awan
+            bgOff: 0, cityOff: 0, groundOff: 0,
             timeAccum: 0,
-            
-            // Cycle Logic
-            isNight: false,
             
             start: function() {
                 resize();
                 this.state = 'PLAY';
                 this.bird.y = canvas.height / 2; this.bird.v = 0; this.bird.rot = 0;
                 this.pipes = []; this.score = 0; this.timeAccum = 0;
-                this.isNight = false;
                 document.getElementById('score-display').innerText = 0;
-                document.getElementById('score-display').style.display = 'block';
                 showScreen(null);
             },
             
             over: function() {
                 this.state = 'OVER';
-                document.getElementById('score-display').style.display = 'none';
                 document.getElementById('final-score').innerText = this.score;
                 showScreen('screen-over');
-                
-                // Panggil fungsi simpan skor (global window function dari modul firebase)
                 if(window.saveScore) window.saveScore(this.score);
             }
         };
@@ -390,13 +443,12 @@
             if (game.state === 'PLAY') {
                 updatePhysics(dt);
             } else if (game.state === 'START') {
-                // Animasi idle
-                game.bgOffset += (CONFIG.speed * 0.1) * dt; 
-                game.cloudOffset += (CONFIG.speed * 0.05) * dt;
-                game.bird.y = canvas.height/2 + Math.sin(timestamp/300)*10;
+                game.groundOff = (game.groundOff + CONFIG.speed * dt) % 20; // Animasi tanah
+                game.cityOff = (game.cityOff + CONFIG.speed * 0.1 * dt) % 480;
+                game.bird.y = canvas.height/2 + Math.sin(timestamp/300)*8;
             }
 
-            draw(dt);
+            draw();
             requestAnimationFrame(loop);
         }
 
@@ -404,135 +456,112 @@
             // Bird
             game.bird.v += CONFIG.gravity * dt;
             game.bird.y += game.bird.v * dt;
-            game.bird.rot = Math.min(Math.PI/4, Math.max(-Math.PI/4, game.bird.v * 0.003));
+            // Rotasi Flappy: Naik = dongak, Turun = nunduk tajam
+            if(game.bird.v < 0) game.bird.rot = -0.5;
+            else {
+                game.bird.rot += 2 * dt; 
+                if(game.bird.rot > 1.5) game.bird.rot = 1.5; // Max nunduk 90 derajat
+            }
 
-            // Pipes Spawn
+            // Parallax
+            game.groundOff = (game.groundOff + CONFIG.speed * dt) % 20;
+            game.bgOff = (game.bgOff + CONFIG.speed * 0.5 * dt) % 480; // Bush
+            game.cityOff = (game.cityOff + CONFIG.speed * 0.1 * dt) % 480; // City pelan
+
+            // Pipe Spawn
             game.timeAccum += dt;
-            if(game.timeAccum > 1.6) { // Jarak antar pipa
+            // Jarak antar pipa 1.6 detik (~240px space horizontal)
+            if(game.timeAccum > 1.6) { 
                 game.timeAccum = 0;
-                let min = 100;
-                let max = canvas.height - 150 - CONFIG.gap;
-                if(max < min) max = min;
+                let groundY = canvas.height - 112;
+                let min = 50; 
+                let max = groundY - CONFIG.gap - 50;
                 let h = Math.floor(Math.random() * (max - min + 1) + min);
                 game.pipes.push({ x: canvas.width, topH: h, passed: false });
             }
 
-            // Movement & Parallax
-            let speed = CONFIG.speed;
-            game.bgOffset += (speed * 0.2) * dt; // Gunung gerak lambat (20% speed)
-            game.cloudOffset += (speed * 0.1) * dt; // Awan gerak sangat lambat (10% speed)
-
             // Pipe Logic
-            const bX = 60; const bR = 10; // Radius hitbox burung diperkecil (10px) agar "Flappy style"
+            // Hitbox burung diperkecil agar adil (Radius 12px)
+            const bX = 60; const bR = 12; 
             
             for(let i=0; i<game.pipes.length; i++) {
                 let p = game.pipes[i];
-                p.x -= speed * dt;
+                p.x -= CONFIG.speed * dt;
 
-                // Hitbox Check
-                // Pipa Width = CONFIG.pipeWidth (52)
-                if (bX + bR > p.x && bX - bR < p.x + CONFIG.pipeWidth) {
-                    if (game.bird.y - bR < p.topH || game.bird.y + bR > p.topH + CONFIG.gap) game.over();
+                // Hitbox Collision
+                // Cek X
+                if (bX + bR > p.x && bX - bR < p.x + CONFIG.pipeW) {
+                    // Cek Y (Ingat: Y Kecil = Atas)
+                    if (game.bird.y - bR < p.topH || game.bird.y + bR > p.topH + CONFIG.gap) {
+                        game.over();
+                    }
                 }
 
-                // Score
-                if (p.x + CONFIG.pipeWidth < bX && !p.passed) {
+                if (p.x + CONFIG.pipeW < bX && !p.passed) {
                     game.score++;
                     document.getElementById('score-display').innerText = game.score;
                     p.passed = true;
-                    
-                    // Logic Ganti Background tiap 20 poin
-                    // 0-19: Siang, 20-39: Malam, 40-59: Siang...
-                    game.isNight = Math.floor(game.score / 20) % 2 !== 0;
                 }
 
-                if (p.x < -70) { game.pipes.shift(); i--; }
+                if (p.x < -CONFIG.pipeW) { game.pipes.shift(); i--; }
             }
 
-            // Floor & Ceiling
-            if(game.bird.y >= canvas.height - 20 || game.bird.y <= 0) game.over();
+            // Ground Collision
+            if(game.bird.y >= canvas.height - 112 - 10) game.over();
         }
 
-        function draw(dt) {
-            // 1. BACKGROUND (Dynamic Sky)
-            // Transisi kasar saja karena diminta "berubah"
-            let skyTop = game.isNight ? "#0b1026" : "#4fc3f7";
-            let skyBot = game.isNight ? "#2b3252" : "#e1f5fe";
-            
-            let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            grad.addColorStop(0, skyTop);
-            grad.addColorStop(1, skyBot);
-            ctx.fillStyle = grad;
+        function draw() {
+            // 1. Sky (Solid Blue)
+            ctx.fillStyle = "#4ec0ca";
             ctx.fillRect(0,0, canvas.width, canvas.height);
 
-            // BINTANG (Jika Malam)
-            if (game.isNight) {
-                ctx.fillStyle = "#FFF";
-                for(let i=0; i<20; i++) { // Gambar ulang random tiap frame? Tidak efisien tapi ok untuk retro
-                   // Agar stabil, gunakan pseudo-random based on coordinate
-                   // Disini kita gambar fix stars saja
-                   ctx.fillRect((i*50)%canvas.width, (i*30)%200, 2, 2);
-                }
-                // Bulan
-                ctx.fillStyle = "#ffeb3b";
-                ctx.beginPath(); ctx.arc(canvas.width - 50, 50, 20, 0, Math.PI*2); ctx.fill();
-            } else {
-                // Matahari
-                ctx.fillStyle = "#ffeb3b";
-                ctx.beginPath(); ctx.arc(canvas.width - 50, 50, 25, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = "rgba(255,235,59, 0.3)";
-                ctx.beginPath(); ctx.arc(canvas.width - 50, 50, 40, 0, Math.PI*2); ctx.fill();
-            }
+            // 2. City (Parallax Jauh)
+            let groundY = canvas.height - 112;
+            let co = Math.floor(game.cityOff);
+            // Draw 2 kali untuk looping
+            ctx.drawImage(assets.city, -co, groundY - 200);
+            ctx.drawImage(assets.city, 480-co, groundY - 200);
 
-            // 2. PARALLAX ELEMENTS (Awan & Gunung)
-            
-            // Awan (Paling Belakang)
-            let cOff = game.cloudOffset % canvas.width;
-            for(let i = -1; i < 2; i++) {
-                ctx.drawImage(assets.cloud, (i * 150) - cOff + 50, 50);
-                ctx.drawImage(assets.cloud, (i * 150) - cOff + 200, 100);
-            }
+            // 3. Bush (Parallax Tengah)
+            let bo = Math.floor(game.bgOff);
+            ctx.drawImage(assets.bush, -bo, groundY - 50);
+            ctx.drawImage(assets.bush, 480-bo, groundY - 50);
 
-            // Gunung (Tengah)
-            let mOff = game.bgOffset % 400; // Lebar gunung 400
-            let groundY = canvas.height - 50;
-            // Gambar gunung berulang
-            for(let i = -1; i < Math.ceil(canvas.width/400)+1; i++) {
-                ctx.drawImage(assets.mountain, (i * 400) - mOff, groundY - 180); 
-            }
-
-            // 3. PIPES
+            // 4. Pipes
             for(let p of game.pipes) {
                 let px = Math.floor(p.x);
-                ctx.drawImage(assets.pipeTop, px, p.topH - 800);
-                ctx.drawImage(assets.pipeBot, px, p.topH + CONFIG.gap);
-            }
-
-            // 4. GROUND
-            ctx.fillStyle = game.isNight ? "#1b2618" : "#DED895";
-            ctx.fillRect(0, groundY, canvas.width, 50);
-            // Garis rumput
-            ctx.fillStyle = game.isNight ? "#2b4528" : "#73BF2E"; 
-            ctx.fillRect(0, groundY, canvas.width, 10);
-            ctx.strokeStyle = "#000"; ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(canvas.width, groundY); ctx.stroke();
-
-            // 5. BIRD
-            if (assets.bird) {
+                // Top Pipe (Flip canvas untuk gambar pipa atas)
                 ctx.save();
-                ctx.translate(60, game.bird.y);
-                ctx.rotate(game.bird.rot);
-                ctx.drawImage(assets.bird, -16, -12); // Center drawing
+                ctx.translate(px, p.topH);
+                ctx.scale(1, -1); // Mirror vertical
+                ctx.drawImage(assets.pipe, 0, 0); 
                 ctx.restore();
+                
+                // Bottom Pipe
+                ctx.drawImage(assets.pipe, px, p.topH + CONFIG.gap);
             }
+
+            // 5. Ground (Depan)
+            let go = Math.floor(game.groundOff);
+            // Pola ground repeating
+            for(let i=-1; i<Math.ceil(canvas.width/480)+1; i++) {
+               ctx.drawImage(assets.ground, i*480 - go, groundY); 
+            }
+
+            // 6. Bird
+            ctx.save();
+            ctx.translate(60, game.bird.y);
+            ctx.rotate(game.bird.rot);
+            ctx.drawImage(assets.bird, -17, -12);
+            ctx.restore();
         }
 
-        // --- INPUT HANDLING ---
+        // --- INPUT ---
         function inputAction(e) {
-            // Prevent interaction if clicking specific buttons
-            if(e.target.closest('button') || e.target.closest('#login-section')) return;
+            if(e.target.closest('button') || e.target.closest('.lb-container')) return;
             
-            if(game.state === 'START' && currentUser) {
-                // Hanya bisa mulai jika sudah login
+            if(game.state === 'START') {
+                 // Guest or Logged in allowed to play
                 game.start();
             } else if(game.state === 'PLAY') {
                 game.bird.v = -CONFIG.jump;
@@ -557,8 +586,7 @@
         }
         window.onresize = resize;
         
-        // INIT
-        createAssets();
+        initAssets();
         resize();
         requestAnimationFrame(loop);
 
