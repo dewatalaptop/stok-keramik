@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Wing Tap - Global Leaderboard</title>
+    <title>Wing Tap - Debug Mode</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -61,11 +61,8 @@
         }
         .btn:active { top: 4px; box-shadow: 0 0 0 #c92a2a; transform: scale(0.98); }
         .btn-green { background: #51CF66; box-shadow: 0 4px 0 #2b8a3e; }
-        .btn-green:active { box-shadow: 0 0 0 #2b8a3e; }
         .btn-blue { background: #339AF0; box-shadow: 0 4px 0 #1864ab; }
-        .btn-blue:active { box-shadow: 0 0 0 #1864ab; }
-        .btn:disabled { background: #adb5bd; box-shadow: none; cursor: not-allowed; color: #495057; top: 4px; }
-
+        
         /* LEADERBOARD STYLES */
         .leaderboard-container {
             width: 90%; max-width: 340px;
@@ -90,9 +87,12 @@
         }
 
         #lb-list {
-            height: 150px; overflow-y: auto;
+            height: 180px; overflow-y: auto;
             background: #f8f9fa; border: 2px inset #ccc;
             padding: 5px;
+            /* Agar pesan error panjang bisa terbaca */
+            word-wrap: break-word; 
+            overflow-wrap: break-word;
         }
 
         .lb-row {
@@ -100,8 +100,7 @@
             padding: 6px 4px; border-bottom: 1px dashed #ddd; 
             font-size: 0.6rem; color: #333; font-family: monospace;
         }
-        .lb-row:nth-child(1) { color: #d63384; font-weight: bold; } /* Top 1 */
-        
+        .lb-row:nth-child(1) { color: #d63384; font-weight: bold; }
         .lb-loc { font-size: 0.5rem; color: #888; margin-left: 5px; text-transform: uppercase; }
 
         .input-group {
@@ -113,12 +112,22 @@
             text-transform: uppercase;
         }
 
-        /* LOCATION BADGE */
         #loc-badge {
             position: absolute; bottom: 10px; right: 10px;
             background: rgba(0,0,0,0.5); padding: 5px 8px;
             border-radius: 4px; color: #fff; font-size: 0.5rem;
             pointer-events: none;
+        }
+        
+        /* ERROR STYLE */
+        .error-box {
+            color: red; font-size: 0.5rem; text-align: left; padding: 5px;
+            font-family: monospace;
+        }
+        .fix-btn {
+            display: block; background: #d63384; color: white; 
+            text-align: center; padding: 10px; margin: 10px 0; 
+            text-decoration: none; border-radius: 4px;
         }
     </style>
 </head>
@@ -173,7 +182,7 @@
         import { getFirestore, collection, addDoc, query, orderBy, limit, where, onSnapshot } 
                from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-        // 1. KONFIGURASI SESUAI PERMINTAAN
+        // CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyDH6cBMyBCNdzG_tdJNs28AZZIm8HnO8l4",
             authDomain: "flytap-ca3ee.firebaseapp.com",
@@ -184,188 +193,182 @@
         };
 
         let db;
-        let playerCity = "Unknown"; // Default
-        let leaderboardMode = 'global'; // 'global' or 'local'
-        let unsubscribe = null; // Untuk mematikan listener realtime lama saat ganti tab
+        let playerCity = "Unknown"; 
+        let leaderboardMode = 'global'; 
+        let unsubscribe = null; 
 
-        // 2. INITIALIZE & LOCATION
+        // INITIALIZE
         try {
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
-            console.log("🔥 Firebase Wing Tap Connected");
+            console.log("🔥 Firebase Connected");
             detectLocation();
         } catch (e) {
             console.error("Firebase Err:", e);
+            document.getElementById('lb-list').innerHTML = `<div class="error-box">Config Error: ${e.message}</div>`;
         }
 
-        // Fungsi Deteksi Lokasi (IP Based - Gratis)
         async function detectLocation() {
             const badge = document.getElementById('loc-badge');
             try {
-                // Menggunakan layanan gratis ipapi.co
                 const res = await fetch('https://ipapi.co/json/');
                 const data = await res.json();
                 if(data.city) {
-                    playerCity = data.city; // Simpan nama kota
+                    playerCity = data.city;
                     badge.innerText = `📍 ${playerCity.toUpperCase()}`;
                 } else {
-                    badge.innerText = `📍 BUMI`;
+                    badge.innerText = `📍 BUMI (LOKASI TIDAK DITEMUKAN)`;
                 }
             } catch(e) {
-                console.log("Gagal deteksi lokasi, default ke Unknown");
-                badge.innerText = `📍 OFFLINE`;
+                console.log("Loc fail");
+                badge.innerText = `📍 OFFLINE / BLOCKED`;
             }
         }
 
-        // 3. LOGIC LEADERBOARD
+        // LEADERBOARD LOGIC
         const inpName = document.getElementById('inp-name');
         const btnSubmit = document.getElementById('btn-submit');
         const listContainer = document.getElementById('lb-list');
         const tabGlobal = document.getElementById('tab-global');
         const tabLocal = document.getElementById('tab-local');
 
-        // Ganti Tab
         tabGlobal.addEventListener('pointerdown', (e) => { e.stopPropagation(); switchTab('global'); });
         tabLocal.addEventListener('pointerdown', (e) => { e.stopPropagation(); switchTab('local'); });
 
         function switchTab(mode) {
             leaderboardMode = mode;
-            // Update UI
             if(mode === 'global') {
-                tabGlobal.classList.add('active');
-                tabLocal.classList.remove('active');
+                tabGlobal.classList.add('active'); tabLocal.classList.remove('active');
             } else {
-                tabGlobal.classList.remove('active');
-                tabLocal.classList.add('active');
+                tabGlobal.classList.remove('active'); tabLocal.classList.add('active');
             }
-            loadLeaderboard(); // Reload data
+            loadLeaderboard(); 
         }
 
         function loadLeaderboard() {
             if(!db) return;
-            if(unsubscribe) unsubscribe(); // Matikan listener sebelumnya agar tidak numpuk
+            if(unsubscribe) unsubscribe(); 
 
             listContainer.innerHTML = '<div style="text-align:center; padding:20px; font-size:0.6rem;">Mengambil Data...</div>';
 
             let q;
             const lbRef = collection(db, "leaderboard");
 
-            if (leaderboardMode === 'local') {
-                // QUERY LOKAL: Filter Kota + Sort Score
-                // NOTE: Ini butuh Composite Index di Firebase Console saat pertama kali run
-                q = query(lbRef, where("city", "==", playerCity), orderBy("score", "desc"), limit(10));
-            } else {
-                // QUERY GLOBAL
-                q = query(lbRef, orderBy("score", "desc"), limit(10));
-            }
-
-            unsubscribe = onSnapshot(q, (snapshot) => {
-                listContainer.innerHTML = "";
-                if (snapshot.empty) {
-                    listContainer.innerHTML = '<div style="text-align:center; padding:20px; font-size:0.6rem;">Belum ada data.</div>';
-                    return;
-                }
-
-                let rank = 1;
-                snapshot.forEach((doc) => {
-                    const d = doc.data();
-                    const row = document.createElement('div');
-                    row.className = 'lb-row';
-                    
-                    // Potong nama panjang
-                    let safeName = d.name.substring(0, 10);
-                    // Tampilkan kota jika di Global, sembunyikan jika di Lokal (redundant)
-                    let locStr = leaderboardMode === 'global' ? `(${d.city || '?'})` : '';
-
-                    row.innerHTML = `
-                        <span style="flex:1">#${rank} ${safeName} <span class="lb-loc">${locStr}</span></span>
-                        <span style="font-weight:bold; color:#339AF0;">${d.score}</span>
-                    `;
-                    listContainer.appendChild(row);
-                    rank++;
-                });
-            }, (error) => {
-                console.error("Leaderboard Error:", error);
-                if (error.code === 'failed-precondition') {
-                    listContainer.innerHTML = '<div style="color:red; font-size:0.5rem; padding:10px;">Error: Butuh Index.<br>Cek Console Browser.</div>';
+            try {
+                if (leaderboardMode === 'local') {
+                    // Query Lokal (Rawan Error Index)
+                    q = query(lbRef, where("city", "==", playerCity), orderBy("score", "desc"), limit(10));
                 } else {
-                    listContainer.innerHTML = '<div style="color:red; font-size:0.5rem; padding:10px;">Gagal memuat.</div>';
+                    // Query Global
+                    q = query(lbRef, orderBy("score", "desc"), limit(10));
                 }
-            });
+
+                unsubscribe = onSnapshot(q, (snapshot) => {
+                    listContainer.innerHTML = "";
+                    if (snapshot.empty) {
+                        listContainer.innerHTML = '<div style="text-align:center; padding:20px; font-size:0.6rem;">Belum ada data.</div>';
+                        return;
+                    }
+                    let rank = 1;
+                    snapshot.forEach((doc) => {
+                        const d = doc.data();
+                        let safeName = d.name ? d.name.substring(0, 10) : 'ANON';
+                        let locStr = leaderboardMode === 'global' ? `(${d.city || '?'})` : '';
+                        const row = document.createElement('div');
+                        row.className = 'lb-row';
+                        row.innerHTML = `
+                            <span style="flex:1">#${rank} ${safeName} <span class="lb-loc">${locStr}</span></span>
+                            <span style="font-weight:bold; color:#339AF0;">${d.score}</span>
+                        `;
+                        listContainer.appendChild(row);
+                        rank++;
+                    });
+                }, (error) => {
+                    // --- ERROR HANDLING RINCI ---
+                    console.error("LB Error:", error);
+                    
+                    let errorMsg = error.message;
+                    let fixButton = "";
+
+                    // Cek apakah errornya karena Index
+                    if (error.code === 'failed-precondition' || errorMsg.includes('requires an index')) {
+                        // Regex untuk mengambil Link dari pesan error
+                        const linkMatch = errorMsg.match(/https:\/\/console\.firebase\.google\.com[^\s]*/);
+                        if (linkMatch) {
+                            fixButton = `<a href="${linkMatch[0]}" target="_blank" class="fix-btn">👉 KLIK UNTUK PERBAIKI INDEX OTOMATIS</a>`;
+                            errorMsg = "Database perlu Index untuk fitur Lokal. Klik tombol di atas, lalu 'Create Index'.";
+                        }
+                    }
+
+                    listContainer.innerHTML = `
+                        <div class="error-box">
+                            <strong>GAGAL MEMUAT (ERROR):</strong><br>
+                            CODE: ${error.code}<br>
+                            ----------------<br>
+                            ${fixButton}
+                            MSG: ${errorMsg}
+                        </div>
+                    `;
+                });
+            } catch (e) {
+                listContainer.innerHTML = `<div class="error-box">Catch Error: ${e.message}</div>`;
+            }
         }
 
-        // Kirim Score
+        // SUBMIT LOGIC
         btnSubmit.addEventListener('pointerdown', async (e) => {
             e.stopPropagation();
             const name = inpName.value.trim().toUpperCase();
             const score = window.game.score;
-
             if(!name) return alert("Isi nama dulu!");
-            if(score === 0) return alert("Skor 0 tidak bisa masuk leaderboard!");
+            if(score === 0) return alert("Skor 0 tidak disimpan.");
 
             btnSubmit.innerText = "...";
             btnSubmit.disabled = true;
 
             try {
                 await addDoc(collection(db, "leaderboard"), {
-                    name: name,
-                    score: score,
-                    city: playerCity,
-                    timestamp: new Date()
+                    name: name, score: score, city: playerCity, timestamp: new Date()
                 });
                 btnSubmit.innerText = "OK!";
                 inpName.value = "";
-                // Data akan auto-update karena onSnapshot
             } catch(e) {
-                console.error(e);
-                alert("Gagal kirim skor.");
+                alert("Gagal kirim: " + e.message);
                 btnSubmit.innerText = "KIRIM";
                 btnSubmit.disabled = false;
             }
         });
 
-        // Expose function agar bisa dipanggil game logic
+        // GLOBAL ACCESS
         window.triggerLeaderboard = loadLeaderboard;
-        window.resetForm = () => {
-            btnSubmit.disabled = false;
-            btnSubmit.innerText = "KIRIM";
-        }
+        window.resetForm = () => { btnSubmit.disabled = false; btnSubmit.innerText = "KIRIM"; }
     </script>
 
     <script>
-        // --- GAME ENGINE ---
-        
-        const CONFIG = {
-            gravity: 1600, jump: 400, speed: 180, gap: 150
-        };
-
+        // --- GAME ENGINE (TIDAK BERUBAH) ---
+        const CONFIG = { gravity: 1600, jump: 400, speed: 180, gap: 150 };
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
-
-        // ASSETS
         const assets = { bird: null, pipeTop: null, pipeBot: null };
 
         function createAssets() {
-            // WING TAP BIRD (Lebih ke nuansa Merah/Putih atau Biru)
             const cB = document.createElement('canvas'); cB.width = 34; cB.height = 24;
             const b = cB.getContext('2d');
-            b.fillStyle = "#FF6B6B"; b.beginPath(); b.arc(17,12, 12, 0, Math.PI*2); b.fill(); // Body
-            b.fillStyle = "#FFF"; b.beginPath(); b.arc(24,8, 5, 0, Math.PI*2); b.fill(); // Eye
-            b.fillStyle = "#000"; b.beginPath(); b.arc(26,8, 2, 0, Math.PI*2); b.fill(); // Pupil
-            b.fillStyle = "#FFD43B"; b.beginPath(); b.moveTo(26,14); b.lineTo(34,18); b.lineTo(26,22); b.fill(); // Beak
-            b.fillStyle = "#FFF"; b.beginPath(); b.ellipse(10,14, 8, 4, 0, 0, Math.PI*2); b.fill(); // Wing
+            b.fillStyle = "#FF6B6B"; b.beginPath(); b.arc(17,12, 12, 0, Math.PI*2); b.fill(); 
+            b.fillStyle = "#FFF"; b.beginPath(); b.arc(24,8, 5, 0, Math.PI*2); b.fill(); 
+            b.fillStyle = "#000"; b.beginPath(); b.arc(26,8, 2, 0, Math.PI*2); b.fill(); 
+            b.fillStyle = "#FFD43B"; b.beginPath(); b.moveTo(26,14); b.lineTo(34,18); b.lineTo(26,22); b.fill(); 
+            b.fillStyle = "#FFF"; b.beginPath(); b.ellipse(10,14, 8, 4, 0, 0, Math.PI*2); b.fill(); 
             b.strokeStyle = "#333"; b.lineWidth = 2; b.stroke();
             assets.bird = cB;
 
-            // PIPES (Simple Modern)
             const w = 60, h = 800;
             const cPT = document.createElement('canvas'); cPT.width = w; cPT.height = h;
             const cPB = document.createElement('canvas'); cPB.width = w; cPB.height = h;
             const pt = cPT.getContext('2d'); const pb = cPB.getContext('2d');
-
             function drawPipe(c, isTop) {
                 c.fillStyle = "#51CF66"; c.fillRect(0,0,w,h);
-                c.fillStyle = "#40C057"; c.fillRect(5,0,w-10,h); // Highlight
+                c.fillStyle = "#40C057"; c.fillRect(5,0,w-10,h); 
                 c.strokeStyle = "#2b8a3e"; c.lineWidth = 4; c.strokeRect(0,0,w,h);
                 let capY = isTop ? h - 30 : 0;
                 c.fillStyle = "#2b8a3e"; c.fillRect(-2, capY, w+4, 30);
@@ -374,26 +377,20 @@
             assets.pipeTop = cPT; assets.pipeBot = cPB;
         }
 
-        // GAME LOGIC
         window.game = {
             state: 'START', score: 0,
             bird: { y: 0, v: 0, rot: 0 }, pipes: [], timeAccum: 0, bgOffset: 0,
-
             start: function() {
-                resize();
-                this.state = 'PLAY';
+                resize(); this.state = 'PLAY';
                 this.bird.y = canvas.height / 2; this.bird.v = 0; this.bird.rot = 0;
                 this.pipes = []; this.score = 0; this.timeAccum = 0;
                 document.getElementById('score-display').innerText = 0;
                 showScreen(null);
             },
-
             over: function() {
                 this.state = 'OVER';
                 document.getElementById('final-score').innerText = this.score;
                 showScreen('screen-over');
-                
-                // Panggil Leaderboard
                 if(window.resetForm) window.resetForm();
                 if(window.triggerLeaderboard) window.triggerLeaderboard();
             }
@@ -408,14 +405,10 @@
         function loop(timestamp) {
             const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
             lastTime = timestamp;
-
             if(game.state === 'PLAY') {
-                // Physics
                 game.bird.v += CONFIG.gravity * dt;
                 game.bird.y += game.bird.v * dt;
                 game.bird.rot = Math.min(Math.PI/4, Math.max(-Math.PI/4, game.bird.v * 0.002));
-
-                // Pipe Spawn
                 game.timeAccum += dt;
                 if(game.timeAccum > 1.5) {
                     game.timeAccum = 0;
@@ -424,21 +417,13 @@
                     let h = Math.floor(Math.random()*(max-min+1)+min);
                     game.pipes.push({ x: canvas.width, topH: h, passed: false });
                 }
-
-                // Move & Collision
-                let move = CONFIG.speed * dt;
-                game.bgOffset += move;
+                let move = CONFIG.speed * dt; game.bgOffset += move;
                 const bX = 60, bR = 12;
-
                 for(let i=0; i<game.pipes.length; i++) {
-                    let p = game.pipes[i];
-                    p.x -= move;
-                    
-                    // Hitbox
+                    let p = game.pipes[i]; p.x -= move;
                     if (bX + bR > p.x && bX - bR < p.x + 60) {
                         if (game.bird.y - bR < p.topH || game.bird.y + bR > p.topH + CONFIG.gap) game.over();
                     }
-
                     if(p.x + 60 < bX && !p.passed) {
                         game.score++;
                         document.getElementById('score-display').innerText = game.score;
@@ -446,46 +431,30 @@
                     }
                     if(p.x < -70) { game.pipes.shift(); i--; }
                 }
-
                 if(game.bird.y >= canvas.height - 20 || game.bird.y <= 0) game.over();
-
             } else if (game.state === 'START') {
                 game.bgOffset += CONFIG.speed * dt;
                 game.bird.y = canvas.height/2 + Math.sin(timestamp/300)*10;
             }
-
-            draw();
-            requestAnimationFrame(loop);
+            draw(); requestAnimationFrame(loop);
         }
 
         function draw() {
             ctx.clearRect(0,0,canvas.width,canvas.height);
-            
-            // Draw Pipes
             for(let p of game.pipes) {
                 let px = Math.floor(p.x);
                 ctx.drawImage(assets.pipeTop, px, p.topH - 800);
                 ctx.drawImage(assets.pipeBot, px, p.topH + CONFIG.gap);
             }
-
-            // Draw Ground
-            ctx.fillStyle = "#8BC34A"; 
-            ctx.fillRect(0, canvas.height-20, canvas.width, 20);
-            
-            // Draw Bird
+            ctx.fillStyle = "#8BC34A"; ctx.fillRect(0, canvas.height-20, canvas.width, 20);
             if(assets.bird) {
-                ctx.save();
-                ctx.translate(60, game.bird.y);
-                ctx.rotate(game.bird.rot);
-                ctx.drawImage(assets.bird, -17, -12);
-                ctx.restore();
+                ctx.save(); ctx.translate(60, game.bird.y); ctx.rotate(game.bird.rot);
+                ctx.drawImage(assets.bird, -17, -12); ctx.restore();
             }
         }
 
-        // INPUTS
         function inputAction(e) {
             if(e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.closest('.leaderboard-container')) return;
-            
             if(game.state === 'START') game.start();
             else if(game.state === 'PLAY') game.bird.v = -CONFIG.jump;
         }
@@ -500,16 +469,10 @@
 
         function resize() {
             const el = document.getElementById('game-stage');
-            canvas.width = el.clientWidth;
-            canvas.height = el.clientHeight;
+            canvas.width = el.clientWidth; canvas.height = el.clientHeight;
         }
         window.onresize = resize;
-
-        // INIT
-        createAssets();
-        resize();
-        requestAnimationFrame(loop);
-
+        createAssets(); resize(); requestAnimationFrame(loop);
     </script>
 </body>
 </html>
