@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Wing Tap - Ultimate</title>
+    <title>Wing Tap - Smart Edition</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -31,7 +31,6 @@
         /* --- UI LAYERS --- */
         .ui-layer { position: absolute; width: 100%; pointer-events: none; z-index: 50; text-align: center; }
         
-        /* Fitur 3: Score Pop Animation */
         #score-display {
             top: 10%; font-size: 3.5rem; color: white;
             -webkit-text-stroke: 3px #000; text-shadow: 4px 4px 0 #000;
@@ -39,17 +38,15 @@
         }
         .score-pop { transform: scale(1.3); }
 
-        /* Fitur 10: Tutorial Hint */
         #tutorial-hint {
             top: 50%; width: 100%;
             font-size: 0.7rem; color: white;
             text-shadow: 2px 2px 0 #000;
             animation: pulse 1.5s infinite;
-            display: none; /* Default hidden, shown in start */
+            display: none;
         }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-        /* Fitur 4: Flash Overlay */
         #flash-overlay {
             position: absolute; top:0; left:0; width:100%; height:100%;
             background: white; opacity: 0; pointer-events: none; z-index: 99;
@@ -110,8 +107,6 @@
         }
         .lb-row:nth-child(1) { background: #fff5cc; font-weight: bold; color: #d35400; }
         .lb-city { font-size: 0.5rem; color: #888; margin-left: 5px; }
-        
-        /* Fitur 9: Highlight Player */
         .lb-me { background-color: #dbe4ff !important; border-left: 4px solid #4285F4; }
     </style>
 </head>
@@ -151,12 +146,10 @@
 
         <div id="screen-over" class="screen">
             <h2 style="color:#E86101; -webkit-text-stroke:2px #fff; text-shadow:3px 3px 0 #000; font-size:2rem; margin-bottom:15px;">GAME OVER</h2>
-            
             <div style="background:#ded895; border:3px solid #543847; padding:10px; border-radius:8px; width:120px; text-align:center; margin-bottom:15px; box-shadow: 4px 4px 0 #000;">
                 <div style="font-size:0.6rem; color:#E86101;">SKOR</div>
                 <div id="final-score" style="font-size:2rem; color:#fff; -webkit-text-stroke:1px #000;">0</div>
             </div>
-
             <div class="lb-container">
                 <div class="tabs">
                     <div class="tab active" id="tab-global">GLOBAL</div>
@@ -166,7 +159,6 @@
                     <div style="text-align:center; padding:20px; font-size:0.6rem; color:#888;">Memuat...</div>
                 </div>
             </div>
-            
             <button class="btn btn-green" id="btn-restart">MAIN LAGI ↺</button>
         </div>
     </div>
@@ -196,9 +188,8 @@
         let playerCity = "Unknown";
         let lbMode = 'global';
         let unsubscribe = null;
-        let userHighScore = 0; // Fitur 8: Caching skor tertinggi
+        let userHighScore = 0; 
 
-        // --- LOCATION DETECTION ---
         async function detectLocation() {
             try {
                 const res = await fetch('https://ipapi.co/json/');
@@ -211,7 +202,6 @@
         }
         detectLocation();
 
-        // --- AUTH ---
         const uiLogin = document.getElementById('login-section');
         const uiPlay = document.getElementById('play-section');
         const uiInfo = document.getElementById('user-info');
@@ -235,13 +225,8 @@
 
         document.getElementById('btn-login').onclick = () => signInWithPopup(auth, provider);
         document.getElementById('btn-logout').onclick = () => signOut(auth);
-        
-        // Fitur 7: Guest Langsung Start
-        document.getElementById('btn-guest').onclick = () => {
-            game.start(); 
-        };
+        document.getElementById('btn-guest').onclick = () => { game.start(); };
 
-        // --- LEADERBOARD ---
         const lbList = document.getElementById('lb-list');
         const tabGlobal = document.getElementById('tab-global');
         const tabLocal = document.getElementById('tab-local');
@@ -282,15 +267,10 @@
                 snapshot.forEach((doc) => {
                     const d = doc.data();
                     const isMe = currentUser && d.uid === currentUser.uid;
-                    
-                    // Fitur 8: Update Highscore Lokal saat load data sendiri
-                    if(isMe && d.score > userHighScore) {
-                        userHighScore = d.score;
-                    }
+                    if(isMe && d.score > userHighScore) { userHighScore = d.score; }
 
                     const row = document.createElement('div');
                     row.className = 'lb-row';
-                    // Fitur 9: Penanda Visual Skor Pemain
                     if(isMe) row.classList.add('lb-me');
                     
                     let locTag = lbMode === 'global' ? `<span class="lb-city">(${d.city||'?'})</span>` : '';
@@ -307,15 +287,9 @@
             });
         }
 
-        // Fitur 8: Pencegahan Spam Skor (Cek Highscore)
         window.saveScore = async (score) => {
             if (!currentUser || score === 0) return;
-            // Jika skor baru tidak lebih tinggi dari record sebelumnya, abaikan
-            if (score <= userHighScore) {
-                console.log("Skor tidak disimpan (belum memecahkan rekor pribadi)");
-                return;
-            }
-
+            if (score <= userHighScore) return;
             try {
                 await addDoc(collection(db, "leaderboard"), {
                     name: currentUser.displayName,
@@ -325,19 +299,60 @@
                     city: playerCity,
                     timestamp: new Date()
                 });
-                console.log("New High Score Saved:", score);
-                userHighScore = score; // Update lokal
+                userHighScore = score;
             } catch (e) { console.error(e); }
         };
     </script>
 
     <script>
-        // --- GAME ENGINE & ASSETS ---
-        
+        // --- AUDIO ENGINE (WEB AUDIO API) ---
+        const AudioEngine = {
+            ctx: null,
+            init: function() {
+                if(!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            },
+            play: function(type) {
+                if(!this.ctx) return;
+                if(this.ctx.state === 'suspended') this.ctx.resume();
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                const now = this.ctx.currentTime;
+                
+                if (type === 'jump') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.linearRampToValueAtTime(300, now + 0.1);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (type === 'score') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(1000, now);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                } else if (type === 'hit') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(100, now);
+                    osc.frequency.linearRampToValueAtTime(50, now + 0.3);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                }
+            }
+        };
+
+        // --- GAME ENGINE ---
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
 
-        // CONFIG
         const CONFIG = {
             gravity: 1100,
             jump: 320,
@@ -346,42 +361,15 @@
             pipeW: 52 
         };
 
-        // --- ASSET GENERATOR ---
         const assets = {};
 
         function initAssets() {
-            // Fitur 5: Animasi Sayap Burung
-            // Kita buat 2 frame: Sayap Atas & Sayap Bawah
-            
-            // Frame 1: Sayap Normal/Atas
-            const cB1 = createAssetCanvas(34, 24);
-            drawCuteBird(cB1.ctx, 0); 
-            assets.birdUp = cB1.cvs;
-
-            // Frame 2: Sayap Bawah
-            const cB2 = createAssetCanvas(34, 24);
-            drawCuteBird(cB2.ctx, 4); // Offset sayap ke bawah
-            assets.birdDown = cB2.cvs;
-
-            // Pipa
-            const cP = createAssetCanvas(CONFIG.pipeW, 600);
-            drawPipe(cP.ctx);
-            assets.pipe = cP.cvs;
-
-            // Tanah
-            const cG = createAssetCanvas(480, 112);
-            drawGround(cG.ctx);
-            assets.ground = cG.cvs;
-
-            // Kota
-            const cC = createAssetCanvas(480, 250);
-            drawCity(cC.ctx);
-            assets.city = cC.cvs;
-
-            // Semak
-            const cS = createAssetCanvas(480, 60);
-            drawBush(cS.ctx);
-            assets.bush = cS.cvs;
+            const cB1 = createAssetCanvas(34, 24); drawCuteBird(cB1.ctx, 0); assets.birdUp = cB1.cvs;
+            const cB2 = createAssetCanvas(34, 24); drawCuteBird(cB2.ctx, 4); assets.birdDown = cB2.cvs;
+            const cP = createAssetCanvas(CONFIG.pipeW, 600); drawPipe(cP.ctx); assets.pipe = cP.cvs;
+            const cG = createAssetCanvas(480, 112); drawGround(cG.ctx); assets.ground = cG.cvs;
+            const cC = createAssetCanvas(480, 250); drawCity(cC.ctx); assets.city = cC.cvs;
+            const cS = createAssetCanvas(480, 60); drawBush(cS.ctx); assets.bush = cS.cvs;
         }
 
         function createAssetCanvas(w, h) {
@@ -389,17 +377,12 @@
             return { cvs: c, ctx: c.getContext('2d') };
         }
 
-        // --- DRAWING FUNCTIONS ---
         function drawCuteBird(b, wingOffset) {
             b.lineWidth = 2; b.strokeStyle = "#000";
-            // Badan
             b.fillStyle = "#FFD700"; b.beginPath(); b.ellipse(17,12, 14, 10, 0, 0, Math.PI*2); b.fill(); b.stroke();
-            // Mata
             b.fillStyle = "#FFF"; b.beginPath(); b.arc(24, 8, 6, 0, Math.PI*2); b.fill(); b.stroke();
             b.fillStyle = "#000"; b.beginPath(); b.arc(26, 8, 2, 0, Math.PI*2); b.fill();
-            // Sayap (Posisi Dinamis)
             b.fillStyle = "#FFF"; b.beginPath(); b.ellipse(12, 15 + wingOffset, 8, 5, 0, 0, Math.PI*2); b.fill(); b.stroke();
-            // Paruh
             b.fillStyle = "#FF6B6B"; b.beginPath(); b.moveTo(28,12); b.lineTo(34,16); b.lineTo(28,20); b.closePath(); b.fill(); b.stroke();
         }
 
@@ -442,32 +425,26 @@
             }
         }
 
-        // --- GAME LOGIC ---
         const game = {
             state: 'START', score: 0,
             bird: { y: 0, v: 0, rot: 0 },
             pipes: [],
             bgOff: 0, cityOff: 0, groundOff: 0,
             timeAccum: 0,
-            
-            // Variables for New Features
-            graceTime: 0, // Fitur 1
-            lastJump: 0,  // Fitur 2
+            graceTime: 0, 
+            lastJump: 0,  
             
             start: function() {
                 resize();
+                AudioEngine.init(); // Init Audio Context on interaction
                 this.state = 'PLAY';
                 this.bird.y = canvas.height / 2; this.bird.v = 0; this.bird.rot = 0;
                 this.pipes = []; this.score = 0; this.timeAccum = 0;
-                
-                // Reset Feature Variables
-                this.graceTime = 1.0; // Fitur 1: 1 detik kebal
+                this.graceTime = 1.0; 
                 this.lastJump = 0;
                 
                 document.getElementById('score-display').innerText = 0;
-                document.getElementById('score-display').style.display = 'block'; // Ensure visible
-                
-                // Fitur 10: Show/Hide Tutorial
+                document.getElementById('score-display').style.display = 'block'; 
                 document.getElementById('tutorial-hint').style.display = 'block';
                 setTimeout(() => document.getElementById('tutorial-hint').style.display = 'none', 2000);
 
@@ -475,9 +452,8 @@
             },
             
             over: function() {
+                AudioEngine.play('hit'); // SOUND: HIT
                 this.state = 'OVER';
-                
-                // Fitur 4: Flash Effect
                 const flash = document.getElementById('flash-overlay');
                 flash.style.opacity = 0.8;
                 setTimeout(() => flash.style.opacity = 0, 100);
@@ -506,16 +482,12 @@
                 game.cityOff = (game.cityOff + CONFIG.speed * 0.1 * dt) % 480;
                 game.bird.y = canvas.height/2 + Math.sin(timestamp/300)*8;
             }
-
-            draw(dt); // Pass dt for animation timing
-            requestAnimationFrame(loop);
+            draw(dt); requestAnimationFrame(loop);
         }
 
         function updatePhysics(dt) {
-            // Fitur 1: Update Grace Timer
             if (game.graceTime > 0) game.graceTime -= dt;
 
-            // Bird Physics
             game.bird.v += CONFIG.gravity * dt;
             game.bird.y += game.bird.v * dt;
             if(game.bird.v < 0) game.bird.rot = -0.5;
@@ -524,53 +496,62 @@
                 if(game.bird.rot > 1.5) game.bird.rot = 1.5; 
             }
 
-            // Parallax
             game.groundOff = (game.groundOff + CONFIG.speed * dt) % 20;
             game.bgOff = (game.bgOff + CONFIG.speed * 0.5 * dt) % 480; 
             game.cityOff = (game.cityOff + CONFIG.speed * 0.1 * dt) % 480; 
 
-            // Pipe Spawn
             game.timeAccum += dt;
             if(game.timeAccum > 1.6) { 
                 game.timeAccum = 0;
+                
+                // --- FIX 1: SMART PIPE SMOOTHING ---
                 let groundY = canvas.height - 112;
-                let min = 50; 
-                let max = groundY - CONFIG.gap - 50;
-                let h = Math.floor(Math.random() * (max - min + 1) + min);
+                let minSafe = 50; 
+                let maxSafe = groundY - CONFIG.gap - 50;
+                
+                let h;
+                // Jika ini pipa pertama, random bebas
+                if(game.pipes.length === 0) {
+                     h = Math.floor(Math.random() * (maxSafe - minSafe + 1) + minSafe);
+                } else {
+                    // Pipa selanjutnya bergantung pada pipa terakhir
+                    let prevH = game.pipes[game.pipes.length - 1].topH;
+                    let maxChange = 250; // Maksimal perubahan tinggi 250px
+                    let change = (Math.random() * maxChange * 2) - maxChange;
+                    h = prevH + change;
+                    
+                    // Clamp (Batasi) agar tidak keluar layar
+                    if (h < minSafe) h = minSafe;
+                    if (h > maxSafe) h = maxSafe;
+                }
+
                 game.pipes.push({ x: canvas.width, topH: h, passed: false });
             }
 
-            // Pipe Logic
             const bX = 60; const bR = 12; 
             for(let i=0; i<game.pipes.length; i++) {
                 let p = game.pipes[i];
                 p.x -= CONFIG.speed * dt;
                 
-                // Collision
                 if (bX + bR > p.x && bX - bR < p.x + CONFIG.pipeW) {
                     if (game.bird.y - bR < p.topH || game.bird.y + bR > p.topH + CONFIG.gap) {
-                        // Fitur 1: Cek Invincibility
                         if (game.graceTime <= 0) game.over();
                     }
                 }
                 
-                // Score Increase
                 if (p.x + CONFIG.pipeW < bX && !p.passed) {
                     game.score++;
-                    
-                    // Fitur 3: Score Pop Animation
+                    AudioEngine.play('score'); // SOUND: SCORE
                     const sd = document.getElementById('score-display');
                     sd.innerText = game.score;
                     sd.classList.remove('score-pop');
-                    void sd.offsetWidth; // Trigger reflow
+                    void sd.offsetWidth; 
                     sd.classList.add('score-pop');
-
                     p.passed = true;
                 }
                 if (p.x < -CONFIG.pipeW) { game.pipes.shift(); i--; }
             }
 
-            // Ground Collision (Always fatal, even in grace period)
             if(game.bird.y >= canvas.height - 112 - 10) game.over();
         }
 
@@ -591,25 +572,17 @@
             let go = Math.floor(game.groundOff);
             for(let i=-1; i<Math.ceil(canvas.width/480)+1; i++) { ctx.drawImage(assets.ground, i*480 - go, groundY); }
             
-            // Draw Bird
             ctx.save();
             ctx.translate(60, game.bird.y);
             ctx.rotate(game.bird.rot);
-            
-            // Fitur 1: Blink effect saat Grace Period
             if (game.graceTime > 0 && Math.floor(Date.now() / 100) % 2 === 0) {
                 ctx.globalAlpha = 0.5;
             }
 
-            // Fitur 5: Animasi Sayap berdasarkan Kecepatan
-            // Jika naik (v < 0) gunakan sayap bawah (effort), jika turun sayap atas (gliding)
-            // Atau sekedar flapping periodik
             let birdAsset = assets.birdUp;
             if (game.state === 'PLAY') {
-                // Flap cepat saat naik
                 if (game.bird.v < 0 || Math.sin(Date.now() / 50) > 0) birdAsset = assets.birdDown;
             } else {
-                // Flap santai saat idle
                 if (Math.sin(Date.now() / 200) > 0) birdAsset = assets.birdDown;
             }
             
@@ -618,31 +591,24 @@
             ctx.globalAlpha = 1.0;
         }
 
-        // --- INPUT HANDLING ---
         function inputAction(e) {
             if(e.target.closest('button') || e.target.closest('.lb-container')) return;
             
             if(game.state === 'START') {
                 game.start();
             } else if(game.state === 'PLAY') {
-                // Fitur 2: Input Limiter / Anti-Spam
                 const now = Date.now();
-                if (now - game.lastJump > 120) { // 120ms delay minimum
+                if (now - game.lastJump > 120) { 
                     game.bird.v = -CONFIG.jump;
                     game.lastJump = now;
-                    
-                    // Hide tutorial on first jump
+                    AudioEngine.play('jump'); // SOUND: JUMP
                     document.getElementById('tutorial-hint').style.display = 'none';
                 }
             }
         }
 
         const stage = document.getElementById('game-stage');
-        
-        // Touch / Click
         stage.addEventListener('pointerdown', inputAction);
-        
-        // Fitur 6: Keyboard Support (Spasi, W, Panah Atas)
         window.addEventListener('keydown', (e) => {
             if(['Space', 'ArrowUp', 'KeyW'].includes(e.code)) {
                 inputAction(e);
