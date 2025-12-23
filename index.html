@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Flappy Dolan Sawah - Turbo Fix</title>
+    <title>Wing Tap - Global Leaderboard</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-        /* OPTIMASI CSS GPU */
+        /* RESET & BASE */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; }
-        
         body {
             margin: 0; padding: 0;
             height: 100dvh; width: 100vw;
@@ -22,20 +21,18 @@
         #game-stage {
             position: relative;
             width: 100%; max-width: 480px; height: 100%;
-            /* Paksa rendering ke GPU */
             transform: translateZ(0); will-change: transform;
-            background: linear-gradient(to bottom, #70C5CE 0%, #a4e4ea 100%);
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F7FA 100%);
             overflow: hidden;
             box-shadow: 0 0 40px rgba(0,0,0,0.5);
         }
 
         canvas { 
             display: block; width: 100%; height: 100%; z-index: 1;
-            /* Rendering pixel tajam & cepat */
             image-rendering: pixelated; 
         }
 
-        /* UI ELEMENTS */
+        /* UI LAYERS */
         .ui-layer { position: absolute; width: 100%; pointer-events: none; z-index: 10; text-align: center; }
         
         #score-display {
@@ -45,32 +42,83 @@
 
         .screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(4px);
             display: flex; flex-direction: column; 
             justify-content: center; align-items: center;
             z-index: 20; display: none;
-            transition: opacity 0.1s; /* Transisi dipercepat */
+            transition: opacity 0.2s;
         }
 
         /* BUTTONS */
         .btn {
-            background: #E86101; border: 2px solid #fff;
-            box-shadow: 0 4px 0 #994000; color: white;
-            padding: 15px 20px; font-size: 0.9rem;
+            background: #FF6B6B; border: 2px solid #fff;
+            box-shadow: 0 4px 0 #c92a2a; color: white;
+            padding: 12px 15px; font-size: 0.8rem;
             font-family: inherit; cursor: pointer;
-            border-radius: 8px; margin: 8px;
+            border-radius: 8px; margin: 5px;
             text-transform: uppercase; width: 80%; max-width: 300px;
             pointer-events: auto; position: relative; top: 0;
-            touch-action: manipulation; /* Optimasi touch */
         }
-        .btn:active { top: 4px; box-shadow: 0 0 0 #994000; transform: scale(0.98); }
-        .btn-green { background: #73BF2E; box-shadow: 0 4px 0 #4c8519; }
-        .btn-green:active { box-shadow: 0 0 0 #4c8519; }
+        .btn:active { top: 4px; box-shadow: 0 0 0 #c92a2a; transform: scale(0.98); }
+        .btn-green { background: #51CF66; box-shadow: 0 4px 0 #2b8a3e; }
+        .btn-green:active { box-shadow: 0 0 0 #2b8a3e; }
+        .btn-blue { background: #339AF0; box-shadow: 0 4px 0 #1864ab; }
+        .btn-blue:active { box-shadow: 0 0 0 #1864ab; }
+        .btn:disabled { background: #adb5bd; box-shadow: none; cursor: not-allowed; color: #495057; top: 4px; }
 
-        .voucher-card {
-            background: #fffcf5; border: 4px dashed #E86101;
-            padding: 20px; width: 90%; max-width: 350px;
-            border-radius: 12px; text-align: center;
+        /* LEADERBOARD STYLES */
+        .leaderboard-container {
+            width: 90%; max-width: 340px;
+            background: #fff;
+            border: 4px solid #333;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 15px;
+            pointer-events: auto;
+        }
+
+        .tabs {
+            display: flex; justify-content: space-between; margin-bottom: 10px;
+        }
+        .tab-btn {
+            flex: 1; padding: 8px 0; font-size: 0.6rem; cursor: pointer;
+            background: #eee; border: 2px solid #333; margin: 0 2px;
+            font-family: inherit; color: #555;
+        }
+        .tab-btn.active {
+            background: #339AF0; color: white; border-color: #1864ab;
+        }
+
+        #lb-list {
+            height: 150px; overflow-y: auto;
+            background: #f8f9fa; border: 2px inset #ccc;
+            padding: 5px;
+        }
+
+        .lb-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 6px 4px; border-bottom: 1px dashed #ddd; 
+            font-size: 0.6rem; color: #333; font-family: monospace;
+        }
+        .lb-row:nth-child(1) { color: #d63384; font-weight: bold; } /* Top 1 */
+        
+        .lb-loc { font-size: 0.5rem; color: #888; margin-left: 5px; text-transform: uppercase; }
+
+        .input-group {
+            display: flex; gap: 5px; width: 100%; margin-bottom: 10px;
+        }
+        #inp-name {
+            flex: 1; padding: 10px; font-family: inherit; font-size: 0.7rem;
+            border: 2px solid #333; border-radius: 4px; background: #eee; 
+            text-transform: uppercase;
+        }
+
+        /* LOCATION BADGE */
+        #loc-badge {
+            position: absolute; bottom: 10px; right: 10px;
+            background: rgba(0,0,0,0.5); padding: 5px 8px;
+            border-radius: 4px; color: #fff; font-size: 0.5rem;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -79,354 +127,386 @@
     <div id="game-stage">
         <canvas id="gameCanvas"></canvas>
         <div class="ui-layer" id="score-display">0</div>
+        
+        <div id="loc-badge">📍 MENCARI LOKASI...</div>
 
         <div id="screen-start" class="screen" style="display: flex;">
-            <h1 style="color:#F4D03F; -webkit-text-stroke:2px #000; text-shadow:4px 4px 0 #000; font-size:2.5rem; text-align:center; line-height:1.4; margin-bottom:20px;">
-                DOLAN<br>SAWAH
+            <h1 style="color:#FFD43B; -webkit-text-stroke:2px #000; text-shadow:4px 4px 0 #000; font-size:2.5rem; text-align:center; line-height:1.4; margin-bottom:20px;">
+                WING<br>TAP
             </h1>
-            <div style="color:white; font-size:0.7rem; margin-bottom:20px; line-height:1.5; text-align: center;">
-                Target Voucher: <span style="color:#F4D03F; font-weight:bold;">20 Poin</span><br>
-                Tap layar / Spasi untuk terbang
+            <div style="color:white; font-size:0.7rem; margin-bottom:30px; line-height:1.5; text-align: center;">
+                Tap layar / Spasi<br>untuk terbang!
             </div>
-            <button class="btn" id="btn-start">MULAI MAIN ▶</button>
+            <button class="btn btn-green" id="btn-start">MULAI MAIN ▶</button>
         </div>
 
         <div id="screen-over" class="screen">
-            <h2 style="color:white; -webkit-text-stroke:2px #000; text-shadow:3px 3px 0 #000; font-size:2rem; margin-bottom:15px;">GAME OVER</h2>
+            <h2 style="color:white; -webkit-text-stroke:2px #000; text-shadow:3px 3px 0 #000; font-size:1.5rem; margin-bottom:10px;">GAME OVER</h2>
             
-            <div style="background:#DED895; border:3px solid #543847; padding:15px; border-radius:10px; width:80%; max-width:300px; text-align:center; margin-bottom:15px;">
-                <div style="font-size:0.7rem; color:#543847; margin-bottom:5px;">SKOR KAMU</div>
-                <div id="final-score" style="font-size:2.5rem; color:#E86101;">0</div>
+            <div style="background:#FFD43B; border:3px solid #000; padding:10px; border-radius:8px; width:80%; max-width:300px; text-align:center; margin-bottom:15px;">
+                <div style="font-size:0.6rem; color:#000; margin-bottom:5px;">SKOR AKHIR</div>
+                <div id="final-score" style="font-size:2rem; color:#c92a2a;">0</div>
             </div>
-            
-            <div style="color:#ccc; font-size:0.6rem; margin-bottom:10px;">Tekan SPASI/TAP untuk ulang</div>
-            <button class="btn" id="btn-restart">COBA LAGI ↺</button>
-            <button class="btn btn-green" id="btn-menu">KEMBALI KE MENU 🏠</button>
-        </div>
 
-        <div id="screen-voucher" class="screen">
-            <div class="voucher-card">
-                <h2 style="color:#E86101; margin:0 0 10px 0; font-size:1.2rem;">🎉 SELAMAT! 🎉</h2>
-                <div style="background:#eee; padding:8px; border-radius:6px; margin:10px 0; font-size:0.8rem;">
-                    Skor: <span id="voucher-score-val" style="font-weight:bold; color:#E86101;">0</span>
+            <div class="leaderboard-container">
+                <div class="input-group">
+                    <input type="text" id="inp-name" placeholder="NAMA (MAX 8)" maxlength="8">
+                    <button class="btn btn-blue" id="btn-submit" style="width:auto; margin:0; padding: 10px;">KIRIM</button>
                 </div>
-                <h1 style="font-size:1.8rem; color:#73BF2E; margin:10px 0; -webkit-text-stroke:1px #000;">GRATIS<br>ES TEH</h1>
-                
-                <div style="border-top:2px dashed #ccc; padding-top:10px; margin-top:10px;">
-                    <div style="font-size:0.6rem; color:#888;">KODE VALIDASI:</div>
-                    <div id="voucher-code" style="font-family:monospace; font-size:1.2rem; font-weight:bold; color:#333; margin:5px 0; letter-spacing:1px;">LOADING...</div>
-                    <div style="background:#ffeba7; padding:5px; border-radius:4px; color:#543847; margin-top:5px; border:1px solid #e0c870;">
-                        <span style="font-size:0.5rem;">Wajib Bergerak:</span><br>
-                        <span id="live-clock" style="font-weight:bold; font-size:1rem;">00:00:00</span>
-                    </div>
+
+                <div class="tabs">
+                    <button class="tab-btn active" id="tab-global">GLOBAL</button>
+                    <button class="tab-btn" id="tab-local">LOKAL (KOTA)</button>
                 </div>
-                <button class="btn btn-green" style="margin-top:15px; padding:10px;" id="btn-voucher-done">SELESAI</button>
+
+                <div id="lb-list">
+                    <div style="text-align:center; padding:20px; color:#888; font-size:0.6rem;">Memuat data...</div>
+                </div>
             </div>
+            
+            <button class="btn" id="btn-restart">COBA LAGI ↺</button>
         </div>
     </div>
 
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, query, orderBy, limit, where, onSnapshot } 
+               from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+        // 1. KONFIGURASI SESUAI PERMINTAAN
+        const firebaseConfig = {
+            apiKey: "AIzaSyDH6cBMyBCNdzG_tdJNs28AZZIm8HnO8l4",
+            authDomain: "flytap-ca3ee.firebaseapp.com",
+            projectId: "flytap-ca3ee",
+            storageBucket: "flytap-ca3ee.firebasestorage.app",
+            messagingSenderId: "690738199480",
+            appId: "1:690738199480:web:b1b442690440db79016d4d"
+        };
+
+        let db;
+        let playerCity = "Unknown"; // Default
+        let leaderboardMode = 'global'; // 'global' or 'local'
+        let unsubscribe = null; // Untuk mematikan listener realtime lama saat ganti tab
+
+        // 2. INITIALIZE & LOCATION
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            console.log("🔥 Firebase Wing Tap Connected");
+            detectLocation();
+        } catch (e) {
+            console.error("Firebase Err:", e);
+        }
+
+        // Fungsi Deteksi Lokasi (IP Based - Gratis)
+        async function detectLocation() {
+            const badge = document.getElementById('loc-badge');
+            try {
+                // Menggunakan layanan gratis ipapi.co
+                const res = await fetch('https://ipapi.co/json/');
+                const data = await res.json();
+                if(data.city) {
+                    playerCity = data.city; // Simpan nama kota
+                    badge.innerText = `📍 ${playerCity.toUpperCase()}`;
+                } else {
+                    badge.innerText = `📍 BUMI`;
+                }
+            } catch(e) {
+                console.log("Gagal deteksi lokasi, default ke Unknown");
+                badge.innerText = `📍 OFFLINE`;
+            }
+        }
+
+        // 3. LOGIC LEADERBOARD
+        const inpName = document.getElementById('inp-name');
+        const btnSubmit = document.getElementById('btn-submit');
+        const listContainer = document.getElementById('lb-list');
+        const tabGlobal = document.getElementById('tab-global');
+        const tabLocal = document.getElementById('tab-local');
+
+        // Ganti Tab
+        tabGlobal.addEventListener('pointerdown', (e) => { e.stopPropagation(); switchTab('global'); });
+        tabLocal.addEventListener('pointerdown', (e) => { e.stopPropagation(); switchTab('local'); });
+
+        function switchTab(mode) {
+            leaderboardMode = mode;
+            // Update UI
+            if(mode === 'global') {
+                tabGlobal.classList.add('active');
+                tabLocal.classList.remove('active');
+            } else {
+                tabGlobal.classList.remove('active');
+                tabLocal.classList.add('active');
+            }
+            loadLeaderboard(); // Reload data
+        }
+
+        function loadLeaderboard() {
+            if(!db) return;
+            if(unsubscribe) unsubscribe(); // Matikan listener sebelumnya agar tidak numpuk
+
+            listContainer.innerHTML = '<div style="text-align:center; padding:20px; font-size:0.6rem;">Mengambil Data...</div>';
+
+            let q;
+            const lbRef = collection(db, "leaderboard");
+
+            if (leaderboardMode === 'local') {
+                // QUERY LOKAL: Filter Kota + Sort Score
+                // NOTE: Ini butuh Composite Index di Firebase Console saat pertama kali run
+                q = query(lbRef, where("city", "==", playerCity), orderBy("score", "desc"), limit(10));
+            } else {
+                // QUERY GLOBAL
+                q = query(lbRef, orderBy("score", "desc"), limit(10));
+            }
+
+            unsubscribe = onSnapshot(q, (snapshot) => {
+                listContainer.innerHTML = "";
+                if (snapshot.empty) {
+                    listContainer.innerHTML = '<div style="text-align:center; padding:20px; font-size:0.6rem;">Belum ada data.</div>';
+                    return;
+                }
+
+                let rank = 1;
+                snapshot.forEach((doc) => {
+                    const d = doc.data();
+                    const row = document.createElement('div');
+                    row.className = 'lb-row';
+                    
+                    // Potong nama panjang
+                    let safeName = d.name.substring(0, 10);
+                    // Tampilkan kota jika di Global, sembunyikan jika di Lokal (redundant)
+                    let locStr = leaderboardMode === 'global' ? `(${d.city || '?'})` : '';
+
+                    row.innerHTML = `
+                        <span style="flex:1">#${rank} ${safeName} <span class="lb-loc">${locStr}</span></span>
+                        <span style="font-weight:bold; color:#339AF0;">${d.score}</span>
+                    `;
+                    listContainer.appendChild(row);
+                    rank++;
+                });
+            }, (error) => {
+                console.error("Leaderboard Error:", error);
+                if (error.code === 'failed-precondition') {
+                    listContainer.innerHTML = '<div style="color:red; font-size:0.5rem; padding:10px;">Error: Butuh Index.<br>Cek Console Browser.</div>';
+                } else {
+                    listContainer.innerHTML = '<div style="color:red; font-size:0.5rem; padding:10px;">Gagal memuat.</div>';
+                }
+            });
+        }
+
+        // Kirim Score
+        btnSubmit.addEventListener('pointerdown', async (e) => {
+            e.stopPropagation();
+            const name = inpName.value.trim().toUpperCase();
+            const score = window.game.score;
+
+            if(!name) return alert("Isi nama dulu!");
+            if(score === 0) return alert("Skor 0 tidak bisa masuk leaderboard!");
+
+            btnSubmit.innerText = "...";
+            btnSubmit.disabled = true;
+
+            try {
+                await addDoc(collection(db, "leaderboard"), {
+                    name: name,
+                    score: score,
+                    city: playerCity,
+                    timestamp: new Date()
+                });
+                btnSubmit.innerText = "OK!";
+                inpName.value = "";
+                // Data akan auto-update karena onSnapshot
+            } catch(e) {
+                console.error(e);
+                alert("Gagal kirim skor.");
+                btnSubmit.innerText = "KIRIM";
+                btnSubmit.disabled = false;
+            }
+        });
+
+        // Expose function agar bisa dipanggil game logic
+        window.triggerLeaderboard = loadLeaderboard;
+        window.resetForm = () => {
+            btnSubmit.disabled = false;
+            btnSubmit.innerText = "KIRIM";
+        }
+    </script>
+
     <script>
-        // --- 1. CONFIG & SYSTEM ---
+        // --- GAME ENGINE ---
+        
         const CONFIG = {
-            gravity: 1500, // Adjusted for delta time (per second)
-            jump: 450,     // Instant velocity upward
-            speed: 200,    // Pixels per second
-            gap: 140,      // Sedikit diperlebar agar flow lebih enak
-            voucherTarget: 20
+            gravity: 1600, jump: 400, speed: 180, gap: 150
         };
 
         const canvas = document.getElementById('gameCanvas');
-        // OPTIMASI RENDER: alpha: false (no transparent), desynchronized: true (low latency)
         const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
 
-        // --- 2. ASSETS GENERATOR ---
+        // ASSETS
         const assets = { bird: null, pipeTop: null, pipeBot: null };
 
         function createAssets() {
-            // A. BURUNG
-            const cB = document.createElement('canvas');
-            cB.width = 44; cB.height = 32;
+            // WING TAP BIRD (Lebih ke nuansa Merah/Putih atau Biru)
+            const cB = document.createElement('canvas'); cB.width = 34; cB.height = 24;
             const b = cB.getContext('2d');
-            
-            b.fillStyle = "#000"; b.beginPath(); b.ellipse(22,16,21,15,0,0,Math.PI*2); b.fill();
-            b.fillStyle = "#FFD700"; b.beginPath(); b.ellipse(22,16,19,13,0,0,Math.PI*2); b.fill();
-            b.fillStyle = "#FFF"; b.beginPath(); b.arc(30,10,8,0,Math.PI*2); b.fill(); b.stroke();
-            b.fillStyle = "#000"; b.beginPath(); b.arc(32,10,3,0,Math.PI*2); b.fill();
-            b.fillStyle = "#FFF"; b.beginPath(); b.ellipse(14,20,10,6,0,0,Math.PI*2); b.fill(); b.stroke();
-            b.fillStyle = "#E86101"; b.beginPath(); b.moveTo(32,18); b.lineTo(44,24); b.lineTo(32,30); b.fill(); b.stroke();
+            b.fillStyle = "#FF6B6B"; b.beginPath(); b.arc(17,12, 12, 0, Math.PI*2); b.fill(); // Body
+            b.fillStyle = "#FFF"; b.beginPath(); b.arc(24,8, 5, 0, Math.PI*2); b.fill(); // Eye
+            b.fillStyle = "#000"; b.beginPath(); b.arc(26,8, 2, 0, Math.PI*2); b.fill(); // Pupil
+            b.fillStyle = "#FFD43B"; b.beginPath(); b.moveTo(26,14); b.lineTo(34,18); b.lineTo(26,22); b.fill(); // Beak
+            b.fillStyle = "#FFF"; b.beginPath(); b.ellipse(10,14, 8, 4, 0, 0, Math.PI*2); b.fill(); // Wing
+            b.strokeStyle = "#333"; b.lineWidth = 2; b.stroke();
             assets.bird = cB;
 
-            // B. PIPA
-            const w = 64, h = 800;
+            // PIPES (Simple Modern)
+            const w = 60, h = 800;
             const cPT = document.createElement('canvas'); cPT.width = w; cPT.height = h;
             const cPB = document.createElement('canvas'); cPB.width = w; cPB.height = h;
-            const pt = cPT.getContext('2d');
-            const pb = cPB.getContext('2d');
+            const pt = cPT.getContext('2d'); const pb = cPB.getContext('2d');
 
             function drawPipe(c, isTop) {
-                c.fillStyle = "#73BF2E"; c.fillRect(4, 0, w-8, h);
-                c.lineWidth = 4; c.strokeStyle = "#000"; c.strokeRect(4, 0, w-8, h);
-                c.fillStyle = "rgba(255,255,255,0.2)"; c.fillRect(8, 0, 8, h);
-                c.fillStyle = "rgba(0,0,0,0.1)"; c.fillRect(w-16, 0, 8, h);
-                let capY = isTop ? h - 40 : 0;
-                c.fillStyle = "#73BF2E"; c.fillRect(0, capY, w, 40);
-                c.strokeRect(0, capY, w, 40);
-                c.fillStyle = "rgba(255,255,255,0.2)"; c.fillRect(4, capY, 8, 40);
+                c.fillStyle = "#51CF66"; c.fillRect(0,0,w,h);
+                c.fillStyle = "#40C057"; c.fillRect(5,0,w-10,h); // Highlight
+                c.strokeStyle = "#2b8a3e"; c.lineWidth = 4; c.strokeRect(0,0,w,h);
+                let capY = isTop ? h - 30 : 0;
+                c.fillStyle = "#2b8a3e"; c.fillRect(-2, capY, w+4, 30);
             }
-
-            drawPipe(pt, true);
-            drawPipe(pb, false);
-            assets.pipeTop = cPT;
-            assets.pipeBot = cPB;
+            drawPipe(pt, true); drawPipe(pb, false);
+            assets.pipeTop = cPT; assets.pipeBot = cPB;
         }
 
-        // --- 3. GAME ENGINE ---
-        const game = {
-            state: 'START',
-            timeAccumulator: 0, // Untuk logika spawn pipa berbasis waktu
-            score: 0,
-            bird: { y: 0, v: 0, rot: 0 },
-            pipes: [],
-            clockInt: null,
-            bgOffset: 0,
+        // GAME LOGIC
+        window.game = {
+            state: 'START', score: 0,
+            bird: { y: 0, v: 0, rot: 0 }, pipes: [], timeAccum: 0, bgOffset: 0,
 
             start: function() {
                 resize();
-                this.stopVoucherClock();
                 this.state = 'PLAY';
-                this.bird.y = canvas.height / 2;
-                this.bird.v = 0;
-                this.bird.rot = 0;
-                this.pipes = [];
-                this.score = 0;
-                this.timeAccumulator = 0;
-                
+                this.bird.y = canvas.height / 2; this.bird.v = 0; this.bird.rot = 0;
+                this.pipes = []; this.score = 0; this.timeAccum = 0;
                 document.getElementById('score-display').innerText = 0;
-                this.showScreen(null);
-            },
-
-            menu: function() {
-                this.stopVoucherClock();
-                this.state = 'START';
-                this.showScreen('screen-start');
+                showScreen(null);
             },
 
             over: function() {
                 this.state = 'OVER';
-                if(this.score >= CONFIG.voucherTarget) {
-                    this.showScreen('screen-voucher');
-                    this.generateVoucher();
-                } else {
-                    document.getElementById('final-score').innerText = this.score;
-                    this.showScreen('screen-over');
-                }
-            },
-
-            showScreen: function(id) {
-                document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
-                if(id) document.getElementById(id).style.display = 'flex';
-            },
-
-            generateVoucher: function() {
-                document.getElementById('voucher-score-val').innerText = this.score;
-                const d = new Date();
-                const code = `DS-${d.getDate()}${d.getMonth()+1}-${Math.floor(Math.random()*9000)+1000}`;
-                document.getElementById('voucher-code').innerText = code;
-                this.stopVoucherClock();
-                const updateTime = () => {
-                    document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('id-ID');
-                };
-                updateTime();
-                this.clockInt = setInterval(updateTime, 1000);
-            },
-
-            stopVoucherClock: function() {
-                if(this.clockInt) { clearInterval(this.clockInt); this.clockInt = null; }
+                document.getElementById('final-score').innerText = this.score;
+                showScreen('screen-over');
+                
+                // Panggil Leaderboard
+                if(window.resetForm) window.resetForm();
+                if(window.triggerLeaderboard) window.triggerLeaderboard();
             }
         };
 
-        // --- 4. MAIN LOOP (DELTA TIME SCALED) ---
-        // Ini adalah kunci kehalusan gerakan di berbagai refresh rate
-        let lastTime = performance.now();
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+            if(id) document.getElementById(id).style.display = 'flex';
+        }
 
+        let lastTime = performance.now();
         function loop(timestamp) {
-            const dt = (timestamp - lastTime) / 1000; // Konversi ke detik
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
             lastTime = timestamp;
 
-            // Batasi dt maks agar tidak tembus tembok saat lag parah (max 0.1s)
-            const safeDt = Math.min(dt, 0.1); 
-
             if(game.state === 'PLAY') {
-                updatePhysics(safeDt);
+                // Physics
+                game.bird.v += CONFIG.gravity * dt;
+                game.bird.y += game.bird.v * dt;
+                game.bird.rot = Math.min(Math.PI/4, Math.max(-Math.PI/4, game.bird.v * 0.002));
+
+                // Pipe Spawn
+                game.timeAccum += dt;
+                if(game.timeAccum > 1.5) {
+                    game.timeAccum = 0;
+                    let min = 80, max = canvas.height - 80 - CONFIG.gap - 80;
+                    if(max < min) max = min;
+                    let h = Math.floor(Math.random()*(max-min+1)+min);
+                    game.pipes.push({ x: canvas.width, topH: h, passed: false });
+                }
+
+                // Move & Collision
+                let move = CONFIG.speed * dt;
+                game.bgOffset += move;
+                const bX = 60, bR = 12;
+
+                for(let i=0; i<game.pipes.length; i++) {
+                    let p = game.pipes[i];
+                    p.x -= move;
+                    
+                    // Hitbox
+                    if (bX + bR > p.x && bX - bR < p.x + 60) {
+                        if (game.bird.y - bR < p.topH || game.bird.y + bR > p.topH + CONFIG.gap) game.over();
+                    }
+
+                    if(p.x + 60 < bX && !p.passed) {
+                        game.score++;
+                        document.getElementById('score-display').innerText = game.score;
+                        p.passed = true;
+                    }
+                    if(p.x < -70) { game.pipes.shift(); i--; }
+                }
+
+                if(game.bird.y >= canvas.height - 20 || game.bird.y <= 0) game.over();
+
             } else if (game.state === 'START') {
-                // Animasi idle
-                game.bgOffset += CONFIG.speed * safeDt;
+                game.bgOffset += CONFIG.speed * dt;
+                game.bird.y = canvas.height/2 + Math.sin(timestamp/300)*10;
             }
-            
-            draw(safeDt);
+
+            draw();
             requestAnimationFrame(loop);
         }
 
-        function updatePhysics(dt) {
-            // 1. Bird Physics
-            game.bird.v += CONFIG.gravity * dt;
-            game.bird.y += game.bird.v * dt;
+        function draw() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
             
-            // Rotasi lebih smooth
-            let targetRot = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (game.bird.v * 0.002)));
-            game.bird.rot += (targetRot - game.bird.rot) * 10 * dt; // Lerp rotation
-
-            // 2. Pipe Spawning (Berbasis Waktu, bukan Frame)
-            game.timeAccumulator += dt;
-            if(game.timeAccumulator > 1.6) { // Spawn tiap ~1.6 detik
-                game.timeAccumulator = 0;
-                let safe = 100;
-                let min = safe;
-                let max = canvas.height - 112 - CONFIG.gap - safe;
-                if (max < min) max = min;
-                let h = Math.floor(Math.random() * (max - min + 1) + min);
-                game.pipes.push({ x: canvas.width, topH: h, passed: false });
-            }
-
-            // 3. Collision & Movement
-            const bX = 60; const bRad = 14; // Hitbox sedikit diperkecil biar fair
-            const moveAmt = CONFIG.speed * dt;
-            game.bgOffset += moveAmt;
-
-            for(let i = 0; i < game.pipes.length; i++) {
-                let p = game.pipes[i];
-                p.x -= moveAmt;
-
-                // Hitbox Check
-                if(bX + bRad > p.x + 4 && bX - bRad < p.x + 60) {
-                    if(game.bird.y - bRad < p.topH || game.bird.y + bRad > p.topH + CONFIG.gap) {
-                        game.over();
-                    }
-                }
-                // Score
-                if(p.x + 64 < bX && !p.passed) {
-                    game.score++;
-                    document.getElementById('score-display').innerText = game.score;
-                    p.passed = true;
-                }
-                // Cleanup
-                if(p.x < -70) { game.pipes.shift(); i--; }
-            }
-
-            // Boundaries
-            let groundY = canvas.height - 50;
-            if(game.bird.y >= groundY - 15) { game.bird.y = groundY - 15; game.over(); }
-            if(game.bird.y <= 0) { game.bird.y = 0; game.over(); }
-        }
-
-        function draw(dt) {
-            // Hapus layar (Optimasi: tidak pakai clearRect jika background solid, tapi di sini gradient)
-            // Kita gambar gradient manual atau pakai CSS? Canvas lebih aman.
-            // Buat gradient sekali saja jika bisa, tapi resize merusaknya.
-            // Untuk performa, fillRect solid lebih cepat, tapi gradient lebih bagus.
-            // Kita pakai fillRect solid warna biru langit dulu, gradient di CSS saja cukup? 
-            // Tidak, gradient di canvas perlu clearRect.
-            ctx.clearRect(0,0, canvas.width, canvas.height);
-
             // Draw Pipes
             for(let p of game.pipes) {
-                // Gambar integer position biar tajam (Math.floor)
                 let px = Math.floor(p.x);
                 ctx.drawImage(assets.pipeTop, px, p.topH - 800);
                 ctx.drawImage(assets.pipeBot, px, p.topH + CONFIG.gap);
             }
 
             // Draw Ground
-            let groundY = canvas.height - 50;
-            let offset = Math.floor(game.bgOffset % 24);
+            ctx.fillStyle = "#8BC34A"; 
+            ctx.fillRect(0, canvas.height-20, canvas.width, 20);
             
-            ctx.fillStyle = "#DED895"; ctx.fillRect(0, groundY, canvas.width, 50);
-            ctx.lineWidth = 3; ctx.strokeStyle = "#543847";
-            ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(canvas.width, groundY); ctx.stroke();
-            
-            ctx.fillStyle = "#73BF2E";
-            for(let i = -offset; i < canvas.width; i+=24) {
-                ctx.beginPath(); ctx.moveTo(i, groundY); ctx.lineTo(i+12, groundY); ctx.lineTo(i+6, groundY+10); ctx.fill();
-            }
-
             // Draw Bird
             if(assets.bird) {
                 ctx.save();
-                let drawY = game.bird.y;
-                let drawRot = game.bird.rot;
-                
-                if(game.state === 'START') {
-                    drawY = canvas.height/2 + Math.sin(Date.now()/300)*10;
-                    drawRot = 0;
-                }
-
-                ctx.translate(60, Math.floor(drawY)); // Math.floor biar pixel perfect
-                ctx.rotate(drawRot);
-                ctx.drawImage(assets.bird, -22, -16);
+                ctx.translate(60, game.bird.y);
+                ctx.rotate(game.bird.rot);
+                ctx.drawImage(assets.bird, -17, -12);
                 ctx.restore();
             }
         }
 
-        // --- 5. INPUT HANDLING (POINTER EVENTS - LOW LATENCY) ---
+        // INPUTS
         function inputAction(e) {
-            // Ignore klik tombol
-            if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+            if(e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.closest('.leaderboard-container')) return;
             
-            // Prevent default browser zoom/scroll action
-            // if(e.cancelable && e.type !== 'pointerdown') e.preventDefault(); 
-            // Pointer events biasanya aman, tapi preventDefault di touchstart tetap perlu di CSS touch-action
-
-            if (game.state === 'START') {
-                game.start();
-            } else if (game.state === 'PLAY') {
-                // INSTANT RESPONSE
-                game.bird.v = -CONFIG.jump;
-            } else if (game.state === 'OVER') {
-                game.start();
-            }
+            if(game.state === 'START') game.start();
+            else if(game.state === 'PLAY') game.bird.v = -CONFIG.jump;
         }
 
-        function setupEvents() {
-            // Gunakan Pointer Events (Support modern: Mouse + Touch jadi satu)
-            const stage = document.getElementById('game-stage');
-            
-            // Pointerdown jauh lebih responsif dari click/touchstart
-            stage.addEventListener('pointerdown', (e) => {
-                inputAction(e);
-            });
+        document.getElementById('game-stage').addEventListener('pointerdown', inputAction);
+        window.addEventListener('keydown', (e) => {
+            if(e.code === 'Space' && document.activeElement.tagName !== 'INPUT') inputAction(e);
+        });
 
-            window.addEventListener('keydown', (e) => { 
-                if(e.code === 'Space') inputAction(e); 
-            });
-
-            // Button listeners
-            const bindBtn = (id, fn) => {
-                const el = document.getElementById(id);
-                // Pakai pointerdown di tombol juga biar instan
-                el.addEventListener('pointerdown', (e) => { e.stopPropagation(); fn(); });
-            };
-
-            bindBtn('btn-start', () => game.start());
-            bindBtn('btn-restart', () => game.start());
-            bindBtn('btn-menu', () => game.menu());
-            bindBtn('btn-voucher-done', () => game.menu());
-        }
+        document.getElementById('btn-start').onclick = () => game.start();
+        document.getElementById('btn-restart').onclick = () => game.start();
 
         function resize() {
             const el = document.getElementById('game-stage');
-            // Set canvas size sesuai pixel ratio perangkat (retina display support)
-            // Tapi untuk performa game pixel art, 1:1 scale sudah cukup dan lebih ringan
             canvas.width = el.clientWidth;
             canvas.height = el.clientHeight;
-            
-            if(game.bird.y > canvas.height - 50) game.bird.y = canvas.height - 200;
         }
-
-        window.addEventListener('resize', resize);
+        window.onresize = resize;
 
         // INIT
         createAssets();
-        setupEvents();
         resize();
         requestAnimationFrame(loop);
 
