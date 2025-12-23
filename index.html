@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Wing Tap - Cute Version</title>
+    <title>Wing Tap - Ultimate</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
+        /* --- BASE STYLES --- */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; }
         body {
             margin: 0; padding: 0;
@@ -22,20 +23,37 @@
             width: 100%; max-width: 480px; height: 100%;
             overflow: hidden;
             box-shadow: 0 0 50px rgba(0,0,0,0.8);
-            background: #4ec0ca; /* Warna Langit Klasik */
+            background: #4ec0ca;
         }
 
-        canvas { 
-            display: block; width: 100%; height: 100%; z-index: 1;
-            image-rendering: pixelated; 
-        }
+        canvas { display: block; width: 100%; height: 100%; z-index: 1; image-rendering: pixelated; }
 
-        /* UI LAYERS */
+        /* --- UI LAYERS --- */
         .ui-layer { position: absolute; width: 100%; pointer-events: none; z-index: 50; text-align: center; }
         
+        /* Fitur 3: Score Pop Animation */
         #score-display {
             top: 10%; font-size: 3.5rem; color: white;
             -webkit-text-stroke: 3px #000; text-shadow: 4px 4px 0 #000;
+            transition: transform 0.1s;
+        }
+        .score-pop { transform: scale(1.3); }
+
+        /* Fitur 10: Tutorial Hint */
+        #tutorial-hint {
+            top: 50%; width: 100%;
+            font-size: 0.7rem; color: white;
+            text-shadow: 2px 2px 0 #000;
+            animation: pulse 1.5s infinite;
+            display: none; /* Default hidden, shown in start */
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* Fitur 4: Flash Overlay */
+        #flash-overlay {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: white; opacity: 0; pointer-events: none; z-index: 99;
+            transition: opacity 0.1s ease-out;
         }
 
         .screen {
@@ -46,7 +64,7 @@
             z-index: 60; display: none;
         }
 
-        /* USER PROFILE */
+        /* --- USER PROFILE --- */
         #user-info {
             position: absolute; top: 15px; left: 15px; z-index: 70;
             display: flex; align-items: center; gap: 10px;
@@ -58,7 +76,7 @@
         #user-name { color: #000; font-size: 0.6rem; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         #loc-badge { font-size: 0.5rem; color: #555; display: block; margin-top: 2px; }
 
-        /* BUTTONS */
+        /* --- BUTTONS --- */
         .btn {
             background: #E86101; border: 2px solid #fff;
             box-shadow: 0 4px 0 #000; color: white;
@@ -72,7 +90,7 @@
         .btn-google { background: #4285F4; border-color: #fff; }
         .btn-green { background: #51CF66; box-shadow: 0 4px 0 #2b8a3e; }
 
-        /* LEADERBOARD TABS */
+        /* --- LEADERBOARD --- */
         .lb-container {
             width: 90%; max-width: 320px; background: #ded895;
             border: 4px solid #543847; border-radius: 10px;
@@ -81,22 +99,20 @@
         .tabs { display: flex; gap: 5px; margin-bottom: 10px; }
         .tab {
             flex: 1; padding: 8px; font-size: 0.6rem; cursor: pointer;
-            background: #e9af60; border: 2px solid #543847; color: #543847;
-            text-align: center;
+            background: #e9af60; border: 2px solid #543847; color: #543847; text-align: center;
         }
         .tab.active { background: #E86101; color: white; border-color: #fff; }
 
-        #lb-list {
-            height: 160px; overflow-y: auto; background: #fff;
-            border: 2px solid #543847; padding: 5px;
-        }
+        #lb-list { height: 160px; overflow-y: auto; background: #fff; border: 2px solid #543847; padding: 5px; }
         .lb-row {
             display: flex; justify-content: space-between; padding: 6px;
             border-bottom: 1px dashed #ccc; font-size: 0.6rem; color: #333;
         }
         .lb-row:nth-child(1) { background: #fff5cc; font-weight: bold; color: #d35400; }
         .lb-city { font-size: 0.5rem; color: #888; margin-left: 5px; }
-
+        
+        /* Fitur 9: Highlight Player */
+        .lb-me { background-color: #dbe4ff !important; border-left: 4px solid #4285F4; }
     </style>
 </head>
 <body>
@@ -104,6 +120,8 @@
     <div id="game-stage">
         <canvas id="gameCanvas"></canvas>
         <div class="ui-layer" id="score-display">0</div>
+        <div class="ui-layer" id="tutorial-hint">TAP / SPASI UNTUK TERBANG</div>
+        <div id="flash-overlay"></div>
         
         <div id="user-info">
             <img id="user-avatar" src="" alt="">
@@ -178,6 +196,7 @@
         let playerCity = "Unknown";
         let lbMode = 'global';
         let unsubscribe = null;
+        let userHighScore = 0; // Fitur 8: Caching skor tertinggi
 
         // --- LOCATION DETECTION ---
         async function detectLocation() {
@@ -188,9 +207,7 @@
                     playerCity = data.city;
                     document.getElementById('loc-badge').innerText = `📍 ${playerCity}`;
                 }
-            } catch(e) {
-                console.log("Loc fail");
-            }
+            } catch(e) { console.log("Loc fail"); }
         }
         detectLocation();
 
@@ -212,14 +229,16 @@
                 uiLogin.style.display = 'block';
                 uiPlay.style.display = 'none';
                 uiInfo.style.display = 'none';
+                userHighScore = 0;
             }
         });
 
         document.getElementById('btn-login').onclick = () => signInWithPopup(auth, provider);
         document.getElementById('btn-logout').onclick = () => signOut(auth);
+        
+        // Fitur 7: Guest Langsung Start
         document.getElementById('btn-guest').onclick = () => {
-            uiLogin.style.display = 'none';
-            uiPlay.style.display = 'block';
+            game.start(); 
         };
 
         // --- LEADERBOARD ---
@@ -248,7 +267,6 @@
             const ref = collection(db, "leaderboard");
 
             if (lbMode === 'local') {
-                // Menggunakan Index yang sudah Anda buat sebelumnya
                 q = query(ref, where("city", "==", playerCity), orderBy("score", "desc"), limit(10));
             } else {
                 q = query(ref, orderBy("score", "desc"), limit(10));
@@ -257,16 +275,23 @@
             unsubscribe = onSnapshot(q, (snapshot) => {
                 lbList.innerHTML = "";
                 if(snapshot.empty) {
-                    lbList.innerHTML = `<div style="text-align:center; padding:20px; font-size:0.6rem;">Belum ada skor ${lbMode === 'local' ? 'di ' + playerCity : ''}.</div>`;
+                    lbList.innerHTML = `<div style="text-align:center; padding:20px; font-size:0.6rem;">Belum ada skor.</div>`;
                     return;
                 }
                 let rank = 1;
                 snapshot.forEach((doc) => {
                     const d = doc.data();
                     const isMe = currentUser && d.uid === currentUser.uid;
+                    
+                    // Fitur 8: Update Highscore Lokal saat load data sendiri
+                    if(isMe && d.score > userHighScore) {
+                        userHighScore = d.score;
+                    }
+
                     const row = document.createElement('div');
                     row.className = 'lb-row';
-                    if(isMe) row.style.background = "#dbe4ff";
+                    // Fitur 9: Penanda Visual Skor Pemain
+                    if(isMe) row.classList.add('lb-me');
                     
                     let locTag = lbMode === 'global' ? `<span class="lb-city">(${d.city||'?'})</span>` : '';
                     
@@ -282,9 +307,15 @@
             });
         }
 
-        // SAVE SCORE
+        // Fitur 8: Pencegahan Spam Skor (Cek Highscore)
         window.saveScore = async (score) => {
             if (!currentUser || score === 0) return;
+            // Jika skor baru tidak lebih tinggi dari record sebelumnya, abaikan
+            if (score <= userHighScore) {
+                console.log("Skor tidak disimpan (belum memecahkan rekor pribadi)");
+                return;
+            }
+
             try {
                 await addDoc(collection(db, "leaderboard"), {
                     name: currentUser.displayName,
@@ -294,18 +325,19 @@
                     city: playerCity,
                     timestamp: new Date()
                 });
-                console.log("Score Saved");
+                console.log("New High Score Saved:", score);
+                userHighScore = score; // Update lokal
             } catch (e) { console.error(e); }
         };
     </script>
 
     <script>
-        // --- GAME ENGINE & GENERATIVE ART ---
+        // --- GAME ENGINE & ASSETS ---
         
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
 
-        // CONFIG (Proporsi Flappy Asli)
+        // CONFIG
         const CONFIG = {
             gravity: 1100,
             jump: 320,
@@ -314,68 +346,82 @@
             pipeW: 52 
         };
 
-        // --- ASSET GENERATOR (CANVAS DRAWING) ---
+        // --- ASSET GENERATOR ---
         const assets = {};
 
         function initAssets() {
-            // 1. BURUNG (YANG BARU & LUCU)
-            // Menggunakan bentuk bulat (arc/ellipse) agar terlihat cute
-            const cB = createAssetCanvas(34, 24);
-            const b = cB.ctx;
+            // Fitur 5: Animasi Sayap Burung
+            // Kita buat 2 frame: Sayap Atas & Sayap Bawah
             
-            // Style umum
-            b.lineWidth = 2; 
-            b.strokeStyle = "#000";
+            // Frame 1: Sayap Normal/Atas
+            const cB1 = createAssetCanvas(34, 24);
+            drawCuteBird(cB1.ctx, 0); 
+            assets.birdUp = cB1.cvs;
 
-            // Badan (Kuning Bulat)
-            b.fillStyle = "#FFD700";
-            b.beginPath(); b.ellipse(17,12, 14, 10, 0, 0, Math.PI*2); b.fill(); b.stroke();
+            // Frame 2: Sayap Bawah
+            const cB2 = createAssetCanvas(34, 24);
+            drawCuteBird(cB2.ctx, 4); // Offset sayap ke bawah
+            assets.birdDown = cB2.cvs;
 
-            // Mata (Putih Besar)
-            b.fillStyle = "#FFF";
-            b.beginPath(); b.arc(24, 8, 6, 0, Math.PI*2); b.fill(); b.stroke();
-            // Pupil (Hitam Kecil)
-            b.fillStyle = "#000";
-            b.beginPath(); b.arc(26, 8, 2, 0, Math.PI*2); b.fill();
-
-            // Sayap (Kecil di samping)
-            b.fillStyle = "#FFF";
-            b.beginPath(); b.ellipse(12, 15, 8, 5, 0, 0, Math.PI*2); b.fill(); b.stroke();
-
-            // Paruh (Oranye Segitiga)
-            b.fillStyle = "#FF6B6B";
-            b.beginPath(); b.moveTo(28,12); b.lineTo(34,16); b.lineTo(28,20); b.closePath(); b.fill(); b.stroke();
-
-            assets.bird = cB.cvs;
-
-            // 2. PIPA (Hijau Klasik)
+            // Pipa
             const cP = createAssetCanvas(CONFIG.pipeW, 600);
-            const p = cP.ctx;
+            drawPipe(cP.ctx);
+            assets.pipe = cP.cvs;
+
+            // Tanah
+            const cG = createAssetCanvas(480, 112);
+            drawGround(cG.ctx);
+            assets.ground = cG.cvs;
+
+            // Kota
+            const cC = createAssetCanvas(480, 250);
+            drawCity(cC.ctx);
+            assets.city = cC.cvs;
+
+            // Semak
+            const cS = createAssetCanvas(480, 60);
+            drawBush(cS.ctx);
+            assets.bush = cS.cvs;
+        }
+
+        function createAssetCanvas(w, h) {
+            const c = document.createElement('canvas'); c.width = w; c.height = h;
+            return { cvs: c, ctx: c.getContext('2d') };
+        }
+
+        // --- DRAWING FUNCTIONS ---
+        function drawCuteBird(b, wingOffset) {
+            b.lineWidth = 2; b.strokeStyle = "#000";
+            // Badan
+            b.fillStyle = "#FFD700"; b.beginPath(); b.ellipse(17,12, 14, 10, 0, 0, Math.PI*2); b.fill(); b.stroke();
+            // Mata
+            b.fillStyle = "#FFF"; b.beginPath(); b.arc(24, 8, 6, 0, Math.PI*2); b.fill(); b.stroke();
+            b.fillStyle = "#000"; b.beginPath(); b.arc(26, 8, 2, 0, Math.PI*2); b.fill();
+            // Sayap (Posisi Dinamis)
+            b.fillStyle = "#FFF"; b.beginPath(); b.ellipse(12, 15 + wingOffset, 8, 5, 0, 0, Math.PI*2); b.fill(); b.stroke();
+            // Paruh
+            b.fillStyle = "#FF6B6B"; b.beginPath(); b.moveTo(28,12); b.lineTo(34,16); b.lineTo(28,20); b.closePath(); b.fill(); b.stroke();
+        }
+
+        function drawPipe(p) {
             const grad = p.createLinearGradient(0,0,CONFIG.pipeW,0);
             grad.addColorStop(0, "#543847"); grad.addColorStop(0.1, "#73BF2E"); 
             grad.addColorStop(0.4, "#9CE659"); grad.addColorStop(0.8, "#73BF2E"); 
             grad.addColorStop(1, "#543847");
             p.fillStyle = grad; p.fillRect(0,0,CONFIG.pipeW,600);
             p.lineWidth = 4; p.strokeStyle = "#543847"; p.strokeRect(0,0,CONFIG.pipeW,600);
-            p.fillStyle = grad; p.fillRect(0,0,CONFIG.pipeW,30);
-            p.strokeRect(0,0,CONFIG.pipeW,30);
-            assets.pipe = cP.cvs;
+            p.fillRect(0,0,CONFIG.pipeW,30); p.strokeRect(0,0,CONFIG.pipeW,30);
+        }
 
-            // 3. TANAH
-            const cG = createAssetCanvas(480, 112);
-            const g = cG.ctx;
+        function drawGround(g) {
             g.fillStyle = "#DED895"; g.fillRect(0,0,480,112);
             g.fillStyle = "#73BF2E"; g.fillRect(0,0,480,12);
             g.strokeStyle = "#543847"; g.beginPath(); g.moveTo(0,12); g.lineTo(480,12); g.stroke();
             g.fillStyle = "#d0c874";
-            for(let i=0; i<480; i+=20) {
-                g.beginPath(); g.moveTo(i,12); g.lineTo(i+10,112); g.lineTo(i+20,112); g.lineTo(i+10,12); g.fill();
-            }
-            assets.ground = cG.cvs;
+            for(let i=0; i<480; i+=20) { g.beginPath(); g.moveTo(i,12); g.lineTo(i+10,112); g.lineTo(i+20,112); g.lineTo(i+10,12); g.fill(); }
+        }
 
-            // 4. KOTA
-            const cC = createAssetCanvas(480, 250);
-            const c = cC.ctx;
+        function drawCity(c) {
             let x = 0;
             while(x < 480) {
                 let w = 30 + Math.random()*40; let h = 80 + Math.random()*100;
@@ -385,24 +431,15 @@
                 for(let j=250-h+10; j<250; j+=15) { c.fillRect(x+5, j, w-10, 8); }
                 x += w;
             }
-            assets.city = cC.cvs;
+        }
 
-            // 5. SEMAK
-            const cS = createAssetCanvas(480, 60);
-            const s = cS.ctx;
+        function drawBush(s) {
             s.fillStyle = "#9CE659"; 
             for(let i=0; i<10; i++) {
                 let r = 30 + Math.random()*20; let bx = Math.random()*480;
                 s.beginPath(); s.arc(bx, 60, r, Math.PI, 0); s.fill();
                 s.lineWidth = 2; s.strokeStyle="#73BF2E"; s.stroke();
             }
-            assets.bush = cS.cvs;
-        }
-
-        function createAssetCanvas(w, h) {
-            const c = document.createElement('canvas');
-            c.width = w; c.height = h;
-            return { cvs: c, ctx: c.getContext('2d') };
         }
 
         // --- GAME LOGIC ---
@@ -413,17 +450,38 @@
             bgOff: 0, cityOff: 0, groundOff: 0,
             timeAccum: 0,
             
+            // Variables for New Features
+            graceTime: 0, // Fitur 1
+            lastJump: 0,  // Fitur 2
+            
             start: function() {
                 resize();
                 this.state = 'PLAY';
                 this.bird.y = canvas.height / 2; this.bird.v = 0; this.bird.rot = 0;
                 this.pipes = []; this.score = 0; this.timeAccum = 0;
+                
+                // Reset Feature Variables
+                this.graceTime = 1.0; // Fitur 1: 1 detik kebal
+                this.lastJump = 0;
+                
                 document.getElementById('score-display').innerText = 0;
+                document.getElementById('score-display').style.display = 'block'; // Ensure visible
+                
+                // Fitur 10: Show/Hide Tutorial
+                document.getElementById('tutorial-hint').style.display = 'block';
+                setTimeout(() => document.getElementById('tutorial-hint').style.display = 'none', 2000);
+
                 showScreen(null);
             },
             
             over: function() {
                 this.state = 'OVER';
+                
+                // Fitur 4: Flash Effect
+                const flash = document.getElementById('flash-overlay');
+                flash.style.opacity = 0.8;
+                setTimeout(() => flash.style.opacity = 0, 100);
+
                 document.getElementById('final-score').innerText = this.score;
                 showScreen('screen-over');
                 if(window.saveScore) window.saveScore(this.score);
@@ -449,12 +507,15 @@
                 game.bird.y = canvas.height/2 + Math.sin(timestamp/300)*8;
             }
 
-            draw();
+            draw(dt); // Pass dt for animation timing
             requestAnimationFrame(loop);
         }
 
         function updatePhysics(dt) {
-            // Bird
+            // Fitur 1: Update Grace Timer
+            if (game.graceTime > 0) game.graceTime -= dt;
+
+            // Bird Physics
             game.bird.v += CONFIG.gravity * dt;
             game.bird.y += game.bird.v * dt;
             if(game.bird.v < 0) game.bird.rot = -0.5;
@@ -484,52 +545,108 @@
             for(let i=0; i<game.pipes.length; i++) {
                 let p = game.pipes[i];
                 p.x -= CONFIG.speed * dt;
+                
+                // Collision
                 if (bX + bR > p.x && bX - bR < p.x + CONFIG.pipeW) {
                     if (game.bird.y - bR < p.topH || game.bird.y + bR > p.topH + CONFIG.gap) {
-                        game.over();
+                        // Fitur 1: Cek Invincibility
+                        if (game.graceTime <= 0) game.over();
                     }
                 }
+                
+                // Score Increase
                 if (p.x + CONFIG.pipeW < bX && !p.passed) {
                     game.score++;
-                    document.getElementById('score-display').innerText = game.score;
+                    
+                    // Fitur 3: Score Pop Animation
+                    const sd = document.getElementById('score-display');
+                    sd.innerText = game.score;
+                    sd.classList.remove('score-pop');
+                    void sd.offsetWidth; // Trigger reflow
+                    sd.classList.add('score-pop');
+
                     p.passed = true;
                 }
                 if (p.x < -CONFIG.pipeW) { game.pipes.shift(); i--; }
             }
 
-            // Ground Collision
+            // Ground Collision (Always fatal, even in grace period)
             if(game.bird.y >= canvas.height - 112 - 10) game.over();
         }
 
-        function draw() {
+        function draw(dt) {
             ctx.fillStyle = "#4ec0ca"; ctx.fillRect(0,0, canvas.width, canvas.height);
             let groundY = canvas.height - 112;
             let co = Math.floor(game.cityOff);
             ctx.drawImage(assets.city, -co, groundY - 200); ctx.drawImage(assets.city, 480-co, groundY - 200);
             let bo = Math.floor(game.bgOff);
             ctx.drawImage(assets.bush, -bo, groundY - 50); ctx.drawImage(assets.bush, 480-bo, groundY - 50);
+            
             for(let p of game.pipes) {
                 let px = Math.floor(p.x);
                 ctx.save(); ctx.translate(px, p.topH); ctx.scale(1, -1); ctx.drawImage(assets.pipe, 0, 0); ctx.restore();
                 ctx.drawImage(assets.pipe, px, p.topH + CONFIG.gap);
             }
+            
             let go = Math.floor(game.groundOff);
             for(let i=-1; i<Math.ceil(canvas.width/480)+1; i++) { ctx.drawImage(assets.ground, i*480 - go, groundY); }
-            ctx.save(); ctx.translate(60, game.bird.y); ctx.rotate(game.bird.rot);
-            ctx.drawImage(assets.bird, -17, -12); ctx.restore();
+            
+            // Draw Bird
+            ctx.save();
+            ctx.translate(60, game.bird.y);
+            ctx.rotate(game.bird.rot);
+            
+            // Fitur 1: Blink effect saat Grace Period
+            if (game.graceTime > 0 && Math.floor(Date.now() / 100) % 2 === 0) {
+                ctx.globalAlpha = 0.5;
+            }
+
+            // Fitur 5: Animasi Sayap berdasarkan Kecepatan
+            // Jika naik (v < 0) gunakan sayap bawah (effort), jika turun sayap atas (gliding)
+            // Atau sekedar flapping periodik
+            let birdAsset = assets.birdUp;
+            if (game.state === 'PLAY') {
+                // Flap cepat saat naik
+                if (game.bird.v < 0 || Math.sin(Date.now() / 50) > 0) birdAsset = assets.birdDown;
+            } else {
+                // Flap santai saat idle
+                if (Math.sin(Date.now() / 200) > 0) birdAsset = assets.birdDown;
+            }
+            
+            ctx.drawImage(birdAsset, -17, -12);
+            ctx.restore();
+            ctx.globalAlpha = 1.0;
         }
 
-        // --- INPUT ---
+        // --- INPUT HANDLING ---
         function inputAction(e) {
             if(e.target.closest('button') || e.target.closest('.lb-container')) return;
-            if(game.state === 'START') game.start();
-            else if(game.state === 'PLAY') game.bird.v = -CONFIG.jump;
+            
+            if(game.state === 'START') {
+                game.start();
+            } else if(game.state === 'PLAY') {
+                // Fitur 2: Input Limiter / Anti-Spam
+                const now = Date.now();
+                if (now - game.lastJump > 120) { // 120ms delay minimum
+                    game.bird.v = -CONFIG.jump;
+                    game.lastJump = now;
+                    
+                    // Hide tutorial on first jump
+                    document.getElementById('tutorial-hint').style.display = 'none';
+                }
+            }
         }
 
         const stage = document.getElementById('game-stage');
+        
+        // Touch / Click
         stage.addEventListener('pointerdown', inputAction);
+        
+        // Fitur 6: Keyboard Support (Spasi, W, Panah Atas)
         window.addEventListener('keydown', (e) => {
-            if(e.code === 'Space') inputAction(e);
+            if(['Space', 'ArrowUp', 'KeyW'].includes(e.code)) {
+                inputAction(e);
+            }
         });
 
         document.getElementById('btn-start').onclick = () => game.start();
