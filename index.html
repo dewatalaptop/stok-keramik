@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Wing Tap - Remastered</title>
+    <title>Wing Tap - Cute Version</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -310,89 +310,90 @@
             gravity: 1100,
             jump: 320,
             speed: 150,
-            gap: 105, // Celah lebih sempit (harder)
-            pipeW: 52 // Lebar pipa standar flappy
+            gap: 105, 
+            pipeW: 52 
         };
 
         // --- ASSET GENERATOR (CANVAS DRAWING) ---
-        // Kita gambar asset sekali ke memory canvas agar performa ringan
         const assets = {};
 
         function initAssets() {
-            // 1. BURUNG (Kecil, pixelated)
+            // 1. BURUNG (YANG BARU & LUCU)
+            // Menggunakan bentuk bulat (arc/ellipse) agar terlihat cute
             const cB = createAssetCanvas(34, 24);
             const b = cB.ctx;
-            // Pixel Art Manual
-            b.fillStyle = "#F4ce42"; b.fillRect(4,4,20,14); // Body
-            b.fillStyle = "#fff"; b.fillRect(4,10,14,8); // Wing area
-            b.fillStyle = "#fff"; b.fillRect(18,2,10,10); // Eye White
-            b.fillStyle = "#000"; b.fillRect(24,4,4,4); // Pupil
-            b.fillStyle = "#E86101"; b.fillRect(18,14,14,6); // Beak
-            b.lineWidth = 2; b.strokeStyle="#000"; b.strokeRect(4,4,20,14); // Outline kasar
+            
+            // Style umum
+            b.lineWidth = 2; 
+            b.strokeStyle = "#000";
+
+            // Badan (Kuning Bulat)
+            b.fillStyle = "#FFD700";
+            b.beginPath(); b.ellipse(17,12, 14, 10, 0, 0, Math.PI*2); b.fill(); b.stroke();
+
+            // Mata (Putih Besar)
+            b.fillStyle = "#FFF";
+            b.beginPath(); b.arc(24, 8, 6, 0, Math.PI*2); b.fill(); b.stroke();
+            // Pupil (Hitam Kecil)
+            b.fillStyle = "#000";
+            b.beginPath(); b.arc(26, 8, 2, 0, Math.PI*2); b.fill();
+
+            // Sayap (Kecil di samping)
+            b.fillStyle = "#FFF";
+            b.beginPath(); b.ellipse(12, 15, 8, 5, 0, 0, Math.PI*2); b.fill(); b.stroke();
+
+            // Paruh (Oranye Segitiga)
+            b.fillStyle = "#FF6B6B";
+            b.beginPath(); b.moveTo(28,12); b.lineTo(34,16); b.lineTo(28,20); b.closePath(); b.fill(); b.stroke();
+
             assets.bird = cB.cvs;
 
-            // 2. PIPA (Hijau Klasik dengan Outline Tebal)
+            // 2. PIPA (Hijau Klasik)
             const cP = createAssetCanvas(CONFIG.pipeW, 600);
             const p = cP.ctx;
-            // Gradient Hijau
             const grad = p.createLinearGradient(0,0,CONFIG.pipeW,0);
-            grad.addColorStop(0, "#543847"); // Dark border left
-            grad.addColorStop(0.1, "#73BF2E"); 
-            grad.addColorStop(0.4, "#9CE659"); // Highlight
-            grad.addColorStop(0.8, "#73BF2E"); 
-            grad.addColorStop(1, "#543847"); // Dark border right
-            p.fillStyle = grad;
-            p.fillRect(0,0,CONFIG.pipeW,600);
-            // Border hitam tebal
+            grad.addColorStop(0, "#543847"); grad.addColorStop(0.1, "#73BF2E"); 
+            grad.addColorStop(0.4, "#9CE659"); grad.addColorStop(0.8, "#73BF2E"); 
+            grad.addColorStop(1, "#543847");
+            p.fillStyle = grad; p.fillRect(0,0,CONFIG.pipeW,600);
             p.lineWidth = 4; p.strokeStyle = "#543847"; p.strokeRect(0,0,CONFIG.pipeW,600);
-            // Cap (Topi Pipa)
             p.fillStyle = grad; p.fillRect(0,0,CONFIG.pipeW,30);
             p.strokeRect(0,0,CONFIG.pipeW,30);
             assets.pipe = cP.cvs;
 
-            // 3. TANAH (Ground dengan Pola Miring)
+            // 3. TANAH
             const cG = createAssetCanvas(480, 112);
             const g = cG.ctx;
             g.fillStyle = "#DED895"; g.fillRect(0,0,480,112);
-            // Garis rumput hijau atas
             g.fillStyle = "#73BF2E"; g.fillRect(0,0,480,12);
             g.strokeStyle = "#543847"; g.beginPath(); g.moveTo(0,12); g.lineTo(480,12); g.stroke();
-            // Pola Chevron (Miring)
             g.fillStyle = "#d0c874";
             for(let i=0; i<480; i+=20) {
                 g.beginPath(); g.moveTo(i,12); g.lineTo(i+10,112); g.lineTo(i+20,112); g.lineTo(i+10,12); g.fill();
             }
             assets.ground = cG.cvs;
 
-            // 4. KOTA (Cityscape Background - Parallax)
+            // 4. KOTA
             const cC = createAssetCanvas(480, 250);
             const c = cC.ctx;
-            // Gambar gedung acak
             let x = 0;
             while(x < 480) {
-                let w = 30 + Math.random()*40;
-                let h = 80 + Math.random()*100;
-                // Gedung Hijau/Teal kusam
+                let w = 30 + Math.random()*40; let h = 80 + Math.random()*100;
                 c.fillStyle = Math.random() > 0.5 ? "#a3cfa3" : "#8ebf8e";
                 c.fillRect(x, 250-h, w, h);
-                // Jendela
                 c.fillStyle = "#6ca86c";
-                for(let j=250-h+10; j<250; j+=15) {
-                    c.fillRect(x+5, j, w-10, 8);
-                }
+                for(let j=250-h+10; j<250; j+=15) { c.fillRect(x+5, j, w-10, 8); }
                 x += w;
             }
             assets.city = cC.cvs;
 
-            // 5. SEMAK (Bushes)
+            // 5. SEMAK
             const cS = createAssetCanvas(480, 60);
             const s = cS.ctx;
-            s.fillStyle = "#9CE659"; // Hijau terang
+            s.fillStyle = "#9CE659"; 
             for(let i=0; i<10; i++) {
-                let r = 30 + Math.random()*20;
-                let bx = Math.random()*480;
+                let r = 30 + Math.random()*20; let bx = Math.random()*480;
                 s.beginPath(); s.arc(bx, 60, r, Math.PI, 0); s.fill();
-                // Outline
                 s.lineWidth = 2; s.strokeStyle="#73BF2E"; s.stroke();
             }
             assets.bush = cS.cvs;
@@ -443,7 +444,7 @@
             if (game.state === 'PLAY') {
                 updatePhysics(dt);
             } else if (game.state === 'START') {
-                game.groundOff = (game.groundOff + CONFIG.speed * dt) % 20; // Animasi tanah
+                game.groundOff = (game.groundOff + CONFIG.speed * dt) % 20; 
                 game.cityOff = (game.cityOff + CONFIG.speed * 0.1 * dt) % 480;
                 game.bird.y = canvas.height/2 + Math.sin(timestamp/300)*8;
             }
@@ -456,21 +457,19 @@
             // Bird
             game.bird.v += CONFIG.gravity * dt;
             game.bird.y += game.bird.v * dt;
-            // Rotasi Flappy: Naik = dongak, Turun = nunduk tajam
             if(game.bird.v < 0) game.bird.rot = -0.5;
             else {
                 game.bird.rot += 2 * dt; 
-                if(game.bird.rot > 1.5) game.bird.rot = 1.5; // Max nunduk 90 derajat
+                if(game.bird.rot > 1.5) game.bird.rot = 1.5; 
             }
 
             // Parallax
             game.groundOff = (game.groundOff + CONFIG.speed * dt) % 20;
-            game.bgOff = (game.bgOff + CONFIG.speed * 0.5 * dt) % 480; // Bush
-            game.cityOff = (game.cityOff + CONFIG.speed * 0.1 * dt) % 480; // City pelan
+            game.bgOff = (game.bgOff + CONFIG.speed * 0.5 * dt) % 480; 
+            game.cityOff = (game.cityOff + CONFIG.speed * 0.1 * dt) % 480; 
 
             // Pipe Spawn
             game.timeAccum += dt;
-            // Jarak antar pipa 1.6 detik (~240px space horizontal)
             if(game.timeAccum > 1.6) { 
                 game.timeAccum = 0;
                 let groundY = canvas.height - 112;
@@ -481,28 +480,20 @@
             }
 
             // Pipe Logic
-            // Hitbox burung diperkecil agar adil (Radius 12px)
             const bX = 60; const bR = 12; 
-            
             for(let i=0; i<game.pipes.length; i++) {
                 let p = game.pipes[i];
                 p.x -= CONFIG.speed * dt;
-
-                // Hitbox Collision
-                // Cek X
                 if (bX + bR > p.x && bX - bR < p.x + CONFIG.pipeW) {
-                    // Cek Y (Ingat: Y Kecil = Atas)
                     if (game.bird.y - bR < p.topH || game.bird.y + bR > p.topH + CONFIG.gap) {
                         game.over();
                     }
                 }
-
                 if (p.x + CONFIG.pipeW < bX && !p.passed) {
                     game.score++;
                     document.getElementById('score-display').innerText = game.score;
                     p.passed = true;
                 }
-
                 if (p.x < -CONFIG.pipeW) { game.pipes.shift(); i--; }
             }
 
@@ -511,61 +502,28 @@
         }
 
         function draw() {
-            // 1. Sky (Solid Blue)
-            ctx.fillStyle = "#4ec0ca";
-            ctx.fillRect(0,0, canvas.width, canvas.height);
-
-            // 2. City (Parallax Jauh)
+            ctx.fillStyle = "#4ec0ca"; ctx.fillRect(0,0, canvas.width, canvas.height);
             let groundY = canvas.height - 112;
             let co = Math.floor(game.cityOff);
-            // Draw 2 kali untuk looping
-            ctx.drawImage(assets.city, -co, groundY - 200);
-            ctx.drawImage(assets.city, 480-co, groundY - 200);
-
-            // 3. Bush (Parallax Tengah)
+            ctx.drawImage(assets.city, -co, groundY - 200); ctx.drawImage(assets.city, 480-co, groundY - 200);
             let bo = Math.floor(game.bgOff);
-            ctx.drawImage(assets.bush, -bo, groundY - 50);
-            ctx.drawImage(assets.bush, 480-bo, groundY - 50);
-
-            // 4. Pipes
+            ctx.drawImage(assets.bush, -bo, groundY - 50); ctx.drawImage(assets.bush, 480-bo, groundY - 50);
             for(let p of game.pipes) {
                 let px = Math.floor(p.x);
-                // Top Pipe (Flip canvas untuk gambar pipa atas)
-                ctx.save();
-                ctx.translate(px, p.topH);
-                ctx.scale(1, -1); // Mirror vertical
-                ctx.drawImage(assets.pipe, 0, 0); 
-                ctx.restore();
-                
-                // Bottom Pipe
+                ctx.save(); ctx.translate(px, p.topH); ctx.scale(1, -1); ctx.drawImage(assets.pipe, 0, 0); ctx.restore();
                 ctx.drawImage(assets.pipe, px, p.topH + CONFIG.gap);
             }
-
-            // 5. Ground (Depan)
             let go = Math.floor(game.groundOff);
-            // Pola ground repeating
-            for(let i=-1; i<Math.ceil(canvas.width/480)+1; i++) {
-               ctx.drawImage(assets.ground, i*480 - go, groundY); 
-            }
-
-            // 6. Bird
-            ctx.save();
-            ctx.translate(60, game.bird.y);
-            ctx.rotate(game.bird.rot);
-            ctx.drawImage(assets.bird, -17, -12);
-            ctx.restore();
+            for(let i=-1; i<Math.ceil(canvas.width/480)+1; i++) { ctx.drawImage(assets.ground, i*480 - go, groundY); }
+            ctx.save(); ctx.translate(60, game.bird.y); ctx.rotate(game.bird.rot);
+            ctx.drawImage(assets.bird, -17, -12); ctx.restore();
         }
 
         // --- INPUT ---
         function inputAction(e) {
             if(e.target.closest('button') || e.target.closest('.lb-container')) return;
-            
-            if(game.state === 'START') {
-                 // Guest or Logged in allowed to play
-                game.start();
-            } else if(game.state === 'PLAY') {
-                game.bird.v = -CONFIG.jump;
-            }
+            if(game.state === 'START') game.start();
+            else if(game.state === 'PLAY') game.bird.v = -CONFIG.jump;
         }
 
         const stage = document.getElementById('game-stage');
@@ -576,20 +534,15 @@
 
         document.getElementById('btn-start').onclick = () => game.start();
         document.getElementById('btn-restart').onclick = () => {
-            game.state = 'START';
-            showScreen('screen-start');
+            game.state = 'START'; showScreen('screen-start');
         };
 
         function resize() {
-            canvas.width = stage.clientWidth;
-            canvas.height = stage.clientHeight;
+            canvas.width = stage.clientWidth; canvas.height = stage.clientHeight;
         }
         window.onresize = resize;
         
-        initAssets();
-        resize();
-        requestAnimationFrame(loop);
-
+        initAssets(); resize(); requestAnimationFrame(loop);
     </script>
 </body>
 </html>
