@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Flappy Dolan Sawah - Final Fix</title>
+    <title>Flappy Dolan Sawah - Fixed Version</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -33,13 +33,14 @@
         .ui-layer { position: absolute; width: 100%; pointer-events: none; z-index: 10; text-align: center; }
         
         #score-display {
-            top: 15%; font-size: 4rem; color: white;
+            top: 10%; /* UX: Dinaikkan sedikit agar tidak menghalangi pandangan */
+            font-size: 4rem; color: white;
             -webkit-text-stroke: 2px #000; text-shadow: 4px 4px 0 #000;
         }
 
         .screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
             display: flex; flex-direction: column; 
             justify-content: center; align-items: center;
             z-index: 20; display: none;
@@ -83,7 +84,7 @@
                 Target Voucher: <span style="color:#F4D03F; font-weight:bold;">20 Poin</span><br>
                 Tap layar / Spasi untuk terbang
             </div>
-            <button class="btn" onclick="game.start()">MULAI MAIN ▶</button>
+            <button class="btn" id="btn-start">MULAI MAIN ▶</button>
         </div>
 
         <div id="screen-over" class="screen">
@@ -93,9 +94,10 @@
                 <div style="font-size:0.7rem; color:#543847; margin-bottom:5px;">SKOR KAMU</div>
                 <div id="final-score" style="font-size:2.5rem; color:#E86101;">0</div>
             </div>
-
-            <button class="btn" onclick="game.start()">COBA LAGI ↺</button>
-            <button class="btn btn-green" onclick="game.menu()">KEMBALI KE MENU 🏠</button>
+            
+            <div style="color:#ccc; font-size:0.6rem; margin-bottom:10px;">Tekan SPASI/TAP untuk ulang</div>
+            <button class="btn" id="btn-restart">COBA LAGI ↺</button>
+            <button class="btn btn-green" id="btn-menu">KEMBALI KE MENU 🏠</button>
         </div>
 
         <div id="screen-voucher" class="screen">
@@ -114,74 +116,57 @@
                         <span id="live-clock" style="font-weight:bold; font-size:1rem;">00:00:00</span>
                     </div>
                 </div>
-                <button class="btn btn-green" style="margin-top:15px; padding:10px;" onclick="game.menu()">SELESAI</button>
+                <button class="btn btn-green" style="margin-top:15px; padding:10px;" id="btn-voucher-done">SELESAI</button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- 1. CONFIG FISIKA ORIGINAL ---
+        // --- 1. CONFIG & SYSTEM CONSTANTS ---
         const CONFIG = {
-            gravity: 0.5,     // Diperberat (sebelumnya 0.35)
-            jump: 8.0,        // Diperkuat (sebelumnya 6.5)
-            speed: 3.5,       // Dipercepat sedikit agar tidak ngantuk
-            gap: 130,         // Jarak pipa
-            voucherTarget: 20 
+            gravity: 0.5,
+            jump: 8.0,
+            speed: 3.5,
+            gap: 130,
+            voucherTarget: 20
         };
 
         const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d', { alpha: false }); // Optimasi Rendering
+        // FIX: Hapus alpha:false agar CSS background gradient terlihat
+        const ctx = canvas.getContext('2d'); 
 
-        // --- 2. ASSETS GENERATOR (PIXEL ART STYLE) ---
+        // --- 2. ASSETS GENERATOR ---
         const assets = { bird: null, pipeTop: null, pipeBot: null };
 
         function createAssets() {
-            // A. BURUNG (Bentuk lebih detail & tegas)
+            // A. BURUNG
             const cB = document.createElement('canvas');
             cB.width = 44; cB.height = 32;
             const b = cB.getContext('2d');
             
-            // Outline Hitam (Bikin grafik tajam)
-            b.fillStyle = "#000";
-            b.beginPath(); b.ellipse(22,16,21,15,0,0,Math.PI*2); b.fill();
-            
-            // Body Kuning
-            b.fillStyle = "#FFD700";
-            b.beginPath(); b.ellipse(22,16,19,13,0,0,Math.PI*2); b.fill();
-            
-            // Mata Besar
+            b.fillStyle = "#000"; b.beginPath(); b.ellipse(22,16,21,15,0,0,Math.PI*2); b.fill();
+            b.fillStyle = "#FFD700"; b.beginPath(); b.ellipse(22,16,19,13,0,0,Math.PI*2); b.fill();
             b.fillStyle = "#FFF"; b.beginPath(); b.arc(30,10,8,0,Math.PI*2); b.fill(); b.stroke();
             b.fillStyle = "#000"; b.beginPath(); b.arc(32,10,3,0,Math.PI*2); b.fill();
-            
-            // Sayap Putih
             b.fillStyle = "#FFF"; b.beginPath(); b.ellipse(14,20,10,6,0,0,Math.PI*2); b.fill(); b.stroke();
-            
-            // Paruh Oranye
             b.fillStyle = "#E86101"; b.beginPath(); b.moveTo(32,18); b.lineTo(44,24); b.lineTo(32,30); b.fill(); b.stroke();
-            
             assets.bird = cB;
 
-            // B. PIPA (Style Mario Klasik dengan Outline Tebal)
-            const w = 64, h = 800; // Lebih lebar sedikit biar gagah
+            // B. PIPA
+            const w = 64, h = 800;
             const cPT = document.createElement('canvas'); cPT.width = w; cPT.height = h;
             const cPB = document.createElement('canvas'); cPB.width = w; cPB.height = h;
             const pt = cPT.getContext('2d');
             const pb = cPB.getContext('2d');
 
             function drawPipe(c, isTop) {
-                // Batang Pipa
                 c.fillStyle = "#73BF2E"; c.fillRect(4, 0, w-8, h);
                 c.lineWidth = 4; c.strokeStyle = "#000"; c.strokeRect(4, 0, w-8, h);
-                
-                // Highlight & Shadow (Efek 3D)
                 c.fillStyle = "rgba(255,255,255,0.2)"; c.fillRect(8, 0, 8, h);
                 c.fillStyle = "rgba(0,0,0,0.1)"; c.fillRect(w-16, 0, 8, h);
-
-                // Kepala Pipa
                 let capY = isTop ? h - 40 : 0;
                 c.fillStyle = "#73BF2E"; c.fillRect(0, capY, w, 40);
                 c.strokeRect(0, capY, w, 40);
-                // Detail Kepala
                 c.fillStyle = "rgba(255,255,255,0.2)"; c.fillRect(4, capY, 8, 40);
             }
 
@@ -191,16 +176,19 @@
             assets.pipeBot = cPB;
         }
 
-        // --- 3. GAME ENGINE & STATE MANAGEMENT ---
+        // --- 3. GAME ENGINE ---
         const game = {
             state: 'START', // START, PLAY, OVER, VOUCHER
             frames: 0, score: 0,
             bird: { y: 0, v: 0, rot: 0 },
             pipes: [],
-            
-            // Reset & Start Game
+            clockInt: null, // FIX: Variabel untuk menyimpan interval
+
+            // Method Reset
             start: function() {
-                resize(); // Pastikan ukuran layar pas
+                resize();
+                this.stopVoucherClock(); // FIX: Bersihkan timer lama
+
                 this.state = 'PLAY';
                 this.bird.y = canvas.height / 2;
                 this.bird.v = 0;
@@ -210,25 +198,17 @@
                 this.frames = 0;
                 
                 document.getElementById('score-display').innerText = 0;
-                this.showScreen(null); // Sembunyikan semua layar menu
-                
-                // Mulai Loop jika belum jalan
-                if(!this.loopRunning) {
-                    this.loopRunning = true;
-                    requestAnimationFrame(loop);
-                }
+                this.showScreen(null);
             },
 
-            // Kembali ke Menu Utama (Tanpa Reload)
             menu: function() {
+                this.stopVoucherClock(); // FIX: Bersihkan timer lama
                 this.state = 'START';
                 this.showScreen('screen-start');
             },
 
-            // Game Over Logic
             over: function() {
                 this.state = 'OVER';
-                
                 if(this.score >= CONFIG.voucherTarget) {
                     this.showScreen('screen-voucher');
                     this.generateVoucher();
@@ -238,7 +218,6 @@
                 }
             },
 
-            // Helper: Switch Layar
             showScreen: function(id) {
                 document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
                 if(id) document.getElementById(id).style.display = 'flex';
@@ -250,32 +229,55 @@
                 const code = `DS-${d.getDate()}${d.getMonth()+1}-${Math.floor(Math.random()*9000)+1000}`;
                 document.getElementById('voucher-code').innerText = code;
                 
-                if(this.clockInt) clearInterval(this.clockInt);
-                this.clockInt = setInterval(() => {
+                this.stopVoucherClock(); // Safety check
+                
+                // Update jam real-time
+                const updateTime = () => {
                     document.getElementById('live-clock').innerText = new Date().toLocaleTimeString('id-ID');
-                }, 1000);
+                };
+                updateTime();
+                this.clockInt = setInterval(updateTime, 1000);
+            },
+
+            // FIX: Helper untuk membersihkan interval (Memory Leak Fix)
+            stopVoucherClock: function() {
+                if(this.clockInt) {
+                    clearInterval(this.clockInt);
+                    this.clockInt = null;
+                }
             }
         };
 
-        // --- 4. MAIN LOOP ---
-        function loop() {
-            // Logic Update (Hanya jalan saat Play)
-            if(game.state === 'PLAY') {
-                updatePhysics();
+        // --- 4. MAIN LOOP (FIX: Time-Based Step) ---
+        // Variabel untuk FPS Limiter
+        let lastTime = 0;
+        const targetFPS = 60;
+        const frameInterval = 1000 / targetFPS; // ~16.67ms
+
+        function loop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const deltaTime = timestamp - lastTime;
+
+            // Hanya update jika waktu yang lewat sudah cukup untuk 1 frame (Cap 60 FPS)
+            // Ini mencegah game berjalan 2x lebih cepat di layar 120Hz
+            if (deltaTime >= frameInterval) {
+                lastTime = timestamp - (deltaTime % frameInterval);
+
+                if(game.state === 'PLAY') {
+                    updatePhysics();
+                }
+                draw();
             }
-            // Rendering (Selalu jalan agar tidak blank)
-            draw();
+            
             requestAnimationFrame(loop);
         }
 
         function updatePhysics() {
             game.frames++;
 
-            // 1. Bird Physics (Original Gravity Feel)
+            // 1. Bird Physics
             game.bird.v += CONFIG.gravity;
             game.bird.y += game.bird.v;
-            
-            // Rotasi Burung (Nunduk saat jatuh)
             game.bird.rot = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (game.bird.v * 0.1)));
 
             // 2. Pipe Spawning
@@ -283,13 +285,16 @@
                 let safe = 100;
                 let min = safe;
                 let max = canvas.height - 112 - CONFIG.gap - safe;
+                // Proteksi jika layar terlalu pendek
+                if (max < min) max = min;
+                
                 let h = Math.floor(Math.random() * (max - min + 1) + min);
                 game.pipes.push({ x: canvas.width, topH: h, passed: false });
             }
 
-            // 3. Pipe Collision & Score
-            const bX = 60; // Posisi X burung
-            const bRad = 16; // Radius hitbox
+            // 3. Collision & Logic
+            const bX = 60; 
+            const bRad = 16; 
 
             for(let i = 0; i < game.pipes.length; i++) {
                 let p = game.pipes[i];
@@ -302,43 +307,43 @@
                     }
                 }
 
-                // Score Check
+                // Score
                 if(p.x + 64 < bX && !p.passed) {
                     game.score++;
                     document.getElementById('score-display').innerText = game.score;
                     p.passed = true;
                 }
 
-                // Hapus pipa lewat
+                // Clean up pipes
                 if(p.x < -70) { game.pipes.shift(); i--; }
             }
 
-            // 4. Ground Collision
+            // 4. Boundaries
             let groundY = canvas.height - 50;
+            
+            // Jatuh ke tanah
             if(game.bird.y >= groundY - 15) {
                 game.bird.y = groundY - 15;
                 game.over();
             }
-            // Ceiling Collision
-            if(game.bird.y < 0) {
+            
+            // FIX: Menabrak langit = Mati (Anti-Cheat)
+            if(game.bird.y <= 0) {
                 game.bird.y = 0;
-                game.bird.v = 0;
+                game.over();
             }
         }
 
         function draw() {
-            // Bersihkan Layar
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             // Draw Pipes
             for(let p of game.pipes) {
-                // Pipa Atas
                 ctx.drawImage(assets.pipeTop, p.x, p.topH - 800);
-                // Pipa Bawah
                 ctx.drawImage(assets.pipeBot, p.x, p.topH + CONFIG.gap);
             }
 
-            // Draw Ground (Lantai Bergerak)
+            // Draw Ground
             let groundY = canvas.height - 50;
             let offset = (game.frames * CONFIG.speed) % 24;
             
@@ -346,21 +351,19 @@
             ctx.lineWidth = 3; ctx.strokeStyle = "#543847";
             ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(canvas.width, groundY); ctx.stroke();
             
-            // Pola Rumput
             ctx.fillStyle = "#73BF2E";
             for(let i = -offset; i < canvas.width; i+=24) {
                 ctx.beginPath(); ctx.moveTo(i, groundY); ctx.lineTo(i+12, groundY); ctx.lineTo(i+6, groundY+10); ctx.fill();
             }
 
-            // Draw Bird (Hanya gambar jika aset sudah siap)
+            // Draw Bird
             if(assets.bird) {
                 ctx.save();
-                // Jika game over, burung jatuh tegak lurus ke bawah
                 let drawY = game.bird.y;
                 let drawRot = game.bird.rot;
                 
                 if(game.state === 'START') {
-                    drawY = canvas.height/2 + Math.sin(Date.now()/300)*10; // Efek melayang
+                    drawY = canvas.height/2 + Math.sin(Date.now()/300)*10;
                     drawRot = 0;
                 }
 
@@ -371,32 +374,64 @@
             }
         }
 
-        // --- 5. INPUT & RESIZE ---
+        // --- 5. INPUT HANDLING (FIXED & UNIFIED) ---
         function inputAction(e) {
-            if(e.type !== 'keydown') { if(e.cancelable) e.preventDefault(); }
+            // FIX: Mencegah scroll/zoom pada touch device
+            if(e.type === 'touchstart' || e.type === 'touchmove') {
+                if(e.cancelable) e.preventDefault();
+            }
             
-            if(game.state === 'PLAY') {
+            // FIX: Mencegah tombol fisik (seperti button di HTML) mentrigger input game 2x
+            if (e.target.tagName === 'BUTTON') return;
+
+            // Logic Input Game
+            if (game.state === 'START') {
+                game.start();
+            } else if (game.state === 'PLAY') {
                 game.bird.v = -CONFIG.jump;
-            } else if (game.state === 'START') {
+            } else if (game.state === 'OVER') {
+                // UX FIX: Tekan layar/spasi saat Game Over langsung restart
                 game.start();
             }
         }
 
+        // Event Listeners yang lebih bersih
         window.addEventListener('resize', resize);
+        
+        // Touchstart dengan passive:false agar bisa preventDefault
+        window.addEventListener('touchstart', inputAction, {passive: false});
+        
+        // Mousedown untuk PC
+        window.addEventListener('mousedown', (e) => {
+            // Cek sederhana agar tidak bentrok dengan touch di beberapa browser hybrid
+            inputAction(e);
+        });
+
+        // Keyboard Spacebar
+        window.addEventListener('keydown', (e) => {
+            if(e.code === 'Space') inputAction(e);
+        });
+
+        // Event Handler untuk Tombol HTML (Explicit binding)
+        document.getElementById('btn-start').onclick = (e) => { e.stopPropagation(); game.start(); };
+        document.getElementById('btn-restart').onclick = (e) => { e.stopPropagation(); game.start(); };
+        document.getElementById('btn-menu').onclick = (e) => { e.stopPropagation(); game.menu(); };
+        document.getElementById('btn-voucher-done').onclick = (e) => { e.stopPropagation(); game.menu(); };
+
         function resize() {
             const el = document.getElementById('game-stage');
             canvas.width = el.clientWidth;
             canvas.height = el.clientHeight;
+            
+            // FIX: Boundaries check saat resize agar burung tidak hilang
+            if(game.bird.y > canvas.height - 50) {
+                game.bird.y = canvas.height - 200;
+            }
         }
-
-        window.addEventListener('touchstart', inputAction, {passive: false});
-        window.addEventListener('mousedown', inputAction);
-        window.addEventListener('keydown', (e) => { if(e.code === 'Space') inputAction(e); });
 
         // Init
         createAssets();
         resize();
-        game.loopRunning = true;
         requestAnimationFrame(loop);
 
     </script>
